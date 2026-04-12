@@ -3,6 +3,7 @@ package com.example.goldengymback.model;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "app_user")  // ← c'est le seul changement
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
