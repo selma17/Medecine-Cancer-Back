@@ -16,8 +16,7 @@ public class CorsConfig {
                         .allowedOrigins(
                             "http://localhost:5173",
                             "http://localhost:3000",
-                            "https://medecin-front.vercel.app",
-                            "https://medecin-front-trmd.vercel.app"
+                            "https://medecine-cancer-front.vercel.app"
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*")
