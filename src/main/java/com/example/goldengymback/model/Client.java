@@ -21,6 +21,10 @@ public class Client {
     private String prenom;
     private String renseignementsCliniques;
 
+    @ManyToOne
+    @JoinColumn(name = "medecin_id")
+    private User medecin;
+
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonBackReference
     private List<MammaryScan> mammaryScans = new ArrayList<>();
