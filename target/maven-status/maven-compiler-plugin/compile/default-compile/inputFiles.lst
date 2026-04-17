@@ -1,5 +1,8 @@
 C:\Medecine\Cancer-IA-Back\src\main\java\com\example\goldengymback\config\CorsConfig.java
 C:\Medecine\Cancer-IA-Back\src\main\java\com\example\goldengymback\config\DatabaseConfig.java
+C:\Medecine\Cancer-IA-Back\src\main\java\com\example\goldengymback\config\JwtFilter.java
+C:\Medecine\Cancer-IA-Back\src\main\java\com\example\goldengymback\config\JwtUtil.java
+C:\Medecine\Cancer-IA-Back\src\main\java\com\example\goldengymback\config\SecurityConfig.java
 C:\Medecine\Cancer-IA-Back\src\main\java\com\example\goldengymback\controller\BreastCancerController.java
 C:\Medecine\Cancer-IA-Back\src\main\java\com\example\goldengymback\controller\ClientController.java
 C:\Medecine\Cancer-IA-Back\src\main\java\com\example\goldengymback\controller\MammaryScanController.java

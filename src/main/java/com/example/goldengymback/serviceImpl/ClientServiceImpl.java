@@ -6,7 +6,9 @@ import com.example.goldengymback.service.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-@Service  // Cette annotation permet à Spring de créer un bean de cette classe
+import java.util.List;
+
+@Service
 public class ClientServiceImpl implements ClientService {
 
     private final ClientRepository clientRepository;
@@ -19,5 +21,10 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public Client ajouterClient(Client client) {
         return clientRepository.save(client);
+    }
+
+    @Override
+    public List<Client> getClientsByMedecinId(Long medecinId) {
+        return clientRepository.findByMedecinId(medecinId);
     }
 }
