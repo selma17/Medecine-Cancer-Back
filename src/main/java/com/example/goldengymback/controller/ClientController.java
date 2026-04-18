@@ -42,6 +42,9 @@ public class ClientController {
 
     @GetMapping("/by-medecin")
     public ResponseEntity<List<Client>> getMyClients(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         Long medecinId = (Long) authentication.getPrincipal();
         List<Client> clients = clientService.getClientsByMedecinId(medecinId);
         return ResponseEntity.ok(clients);
