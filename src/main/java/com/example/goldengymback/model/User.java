@@ -5,12 +5,14 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "app_user")  // ← c'est le seul changement
 public class User {
+    @JsonIgnoreProperties({"password"})
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String nom;
     private String prenom;
+    @JsonIgnore
     private String password;
 
     public Long getId() { return id; }

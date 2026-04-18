@@ -67,6 +67,7 @@ public class MammaryScan {
     private String conduiteATenir;
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "client_id")
+    @JsonIgnoreProperties("mammaryScans")
     private Client client;
 
     @OneToMany(mappedBy = "mammaryScan", cascade = CascadeType.ALL, orphanRemoval = true)

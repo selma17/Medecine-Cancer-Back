@@ -26,6 +26,6 @@ public class Client {
     private User medecin;
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonBackReference
+    @JsonIgnoreProperties("client")
     private List<MammaryScan> mammaryScans = new ArrayList<>();
 }
