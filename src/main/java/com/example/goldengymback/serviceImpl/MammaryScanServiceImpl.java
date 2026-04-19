@@ -251,7 +251,6 @@ public class MammaryScanServiceImpl implements MammaryScanService {
                     .orElseThrow(() -> new RuntimeException("Client not found with ID: " + clientId));
             mammaryScan.setClient(existingClient);
         }
-
         return mammaryScanRepository.save(mammaryScan);
     }
 

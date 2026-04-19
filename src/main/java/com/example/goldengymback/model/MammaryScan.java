@@ -66,7 +66,7 @@ public class MammaryScan {
     private String acrType; // Type ACR (A, B ou C)
     @Column(name = "conduiteatenir", columnDefinition = "TEXT")
     private String conduiteATenir;
-    @ManyToOne(cascade = CascadeType.PERSIST)
+    @ManyToOne
     @JoinColumn(name = "client_id")
     @JsonIgnoreProperties({"mammaryScans", "medecin", "password"})
     private Client client;
