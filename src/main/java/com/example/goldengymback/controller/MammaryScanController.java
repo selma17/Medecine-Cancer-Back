@@ -23,10 +23,17 @@ public class MammaryScanController {
         this.mammaryScanService = mammaryScanService;
     }
     @PostMapping("/add")
-    public ResponseEntity<MammaryScan> addMammaryScan(@RequestBody MammaryScan mammaryScan) {
-        MammaryScan createdScan = mammaryScanService.addMammaryScan(mammaryScan);
-        return new ResponseEntity<>(createdScan, HttpStatus.CREATED);
-    }
+        public ResponseEntity<?> addMammaryScan(@RequestBody MammaryScan mammaryScan) {
+            try {
+                MammaryScan createdScan = mammaryScanService.addMammaryScan(mammaryScan);
+                return new ResponseEntity<>(createdScan, HttpStatus.CREATED);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("ERREUR: " + e.getMessage() + " | Cause: " + 
+                            (e.getCause() != null ? e.getCause().getMessage() : "null"));
+            }
+        }
     // Endpoint to create and submit a MammaryScan form
     @PostMapping("/submit")
     public ResponseEntity<MammaryScan> submitMammaryScan(@RequestBody MammaryScan mammaryScan) {
