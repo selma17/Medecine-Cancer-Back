@@ -15,6 +15,8 @@ public class MasseEchostructure {
     private Long id;
 
     private String localisation;
+    private String distanceCentre;
+    private String sein;
     private String mesure;
     private String forme;
     private String contours;
@@ -22,6 +24,7 @@ public class MasseEchostructure {
     private String comportementDesFaisceauxUltrasons;
     private String calcifications;
     private String densite;
+
     @ManyToOne
     @JoinColumn(name = "mammary_scan_id")
     @JsonBackReference

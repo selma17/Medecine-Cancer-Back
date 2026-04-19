@@ -15,15 +15,14 @@ public class MasseMammographie {
     private Long id;
 
     private String localisation;
-
+    private String distanceCentre;
+    private String sein;
     private String forme;
-
     private String contours;
-
     private String densite;
+
     @ManyToOne
     @JoinColumn(name = "mammary_scan_id")
     @JsonBackReference
     private MammaryScan mammaryScan;
-
 }
