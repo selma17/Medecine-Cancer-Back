@@ -23,8 +23,9 @@ public class Client {
 
     @ManyToOne
     @JoinColumn(name = "medecin_id")
+    @JsonIgnoreProperties({"password", "mammaryScans"})
     private User medecin;
-
+    
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties("client")
     private List<MammaryScan> mammaryScans = new ArrayList<>();
