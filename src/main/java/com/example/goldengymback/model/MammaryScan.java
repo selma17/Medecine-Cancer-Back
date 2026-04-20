@@ -38,7 +38,7 @@ public class MammaryScan {
     // Champ booléen pour décider si les signes associés à la mammographie doivent être remplis
     private boolean isSignesAssociesRequired;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "signes_associes_mammographie", joinColumns = @JoinColumn(name = "mammary_scan_id"))
     @Column(name = "signe")
     private List<String> signesAssociesMammographie;
@@ -49,7 +49,7 @@ public class MammaryScan {
     // Champ booléen pour décider si les signes associés à l'échostructure doivent être remplis
     private boolean isSignesAssociesEchostructureRequired;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "signes_associes_echostructure", joinColumns = @JoinColumn(name = "mammary_scan_id"))
     @Column(name = "signe")
     private List<String> signesAssociesEchostructure;
@@ -57,7 +57,7 @@ public class MammaryScan {
     // Champ booléen pour décider si les cas spéciaux doivent être remplis
     private boolean isCasSpeciauxRequired;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "cas_speciaux", joinColumns = @JoinColumn(name = "mammary_scan_id"))
     private List<CasSpecial> casSpeciaux;
 
@@ -71,13 +71,12 @@ public class MammaryScan {
     @JsonIgnoreProperties({"mammaryScans", "medecin", "password"})
     private Client client;
 
-    @OneToMany(mappedBy = "mammaryScan", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "mammaryScan", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<MasseMammographie> massesMammographie = new ArrayList<>();
 
-    @OneToMany(mappedBy = "mammaryScan", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "mammaryScan", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<MasseEchostructure> massesEchostructure = new ArrayList<>();
-
 
 }
