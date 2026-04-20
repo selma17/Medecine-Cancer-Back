@@ -163,20 +163,26 @@ public class MammaryScanServiceImpl implements MammaryScanService {
     }
 
 
-    private String formatConduiteATenir(String conduiteATenir) {
-        // Ajouter une meilleure mise en forme à la conduite à tenir
-        StringBuilder formattedConduite = new StringBuilder();
-        formattedConduite.append("Analyse détaillée de la conduite à tenir :\n\n");
-
-        // Diviser la conduite à tenir en plusieurs paragraphes pour plus de lisibilité
-        String[] sections = conduiteATenir.split("\n");
-        for (String section : sections) {
-            formattedConduite.append(section).append("\n");
+    private String formatConduiteATenir(String aiResponse) {
+        String[] validActions = {
+            "Surveillance", "Biopsie", 
+            "Ablation chirurgicale", "Traitement médical"
+        };
+        for (String action : validActions) {
+            if (aiResponse.contains(action)) {
+                return action;
+            }
         }
-
-        // Terminer avec un message de recommandation
-        formattedConduite.append("\nConclusion: Veuillez suivre l'action recommandée en fonction des résultats ci-dessus.");
-        return formattedConduite.toString();
+        // Pattern regex comme fallback
+        Pattern pattern = Pattern.compile(
+            "Action\\s+recommand[ée]e\\s*[:\\-]?\\s*([\\w\\s]+?)(?:\\.|\\n|$)",
+            Pattern.CASE_INSENSITIVE
+        );
+        Matcher matcher = pattern.matcher(aiResponse);
+        if (matcher.find()) {
+            return matcher.group(1).trim();
+        }
+        return aiResponse;
     }
 
     private String extractAcrScore(String aiResponse) {
