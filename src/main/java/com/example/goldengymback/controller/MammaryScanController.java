@@ -110,4 +110,10 @@ public class MammaryScanController {
         mammaryScanService.delete(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
+    @DeleteMapping("/delete-all")
+    public ResponseEntity<Void> deleteAllScans() {
+        mammaryScanService.getAllMammaryScans()
+            .forEach(scan -> mammaryScanService.delete(scan.getId()));
+        return ResponseEntity.noContent().build();
+    }
 }
