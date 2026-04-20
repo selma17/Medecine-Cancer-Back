@@ -42,11 +42,17 @@ public class ClientController {
 
     @GetMapping("/by-medecin")
     public ResponseEntity<List<Client>> getMyClients(Authentication authentication) {
-        if (authentication == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            if (authentication == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            Long medecinId = (Long) authentication.getPrincipal();
+            List<Client> clients = clientService.getClientsByMedecinId(medecinId);
+            return ResponseEntity.ok(clients);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("ERREUR by-medecin: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        Long medecinId = (Long) authentication.getPrincipal();
-        List<Client> clients = clientService.getClientsByMedecinId(medecinId);
-        return ResponseEntity.ok(clients);
     }
 }
