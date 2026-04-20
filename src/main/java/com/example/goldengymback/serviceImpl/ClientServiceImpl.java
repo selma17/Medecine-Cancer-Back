@@ -27,4 +27,9 @@ public class ClientServiceImpl implements ClientService {
     public List<Client> getClientsByMedecinId(Long medecinId) {
         return clientRepository.findByMedecinId(medecinId);
     }
+
+    @Override
+    public void deleteClient(Long id) {
+        clientRepository.deleteById(id);
+    }
 }

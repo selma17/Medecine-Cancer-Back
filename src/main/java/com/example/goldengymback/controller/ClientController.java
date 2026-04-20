@@ -74,7 +74,7 @@ public class ClientController {
             Long medecinId = (Long) authentication.getPrincipal();
             List<Client> clients = clientService.getClientsByMedecinId(medecinId);
             for (Client c : clients) {
-                clientRepository.deleteById(c.getId());
+                clientService.deleteClient(c.getId());
             }
             return ResponseEntity.ok("Supprimé : " + clients.size() + " clients");
         } catch (Exception e) {

@@ -6,4 +6,5 @@ import java.util.List;
 public interface ClientService {
     Client ajouterClient(Client client);
     List<Client> getClientsByMedecinId(Long medecinId);
+    void deleteClient(Long id);
 }
