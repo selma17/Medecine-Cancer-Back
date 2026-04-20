@@ -24,7 +24,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     private String groqApiKey;
 
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-    private static final String GROQ_MODEL = "llama3-70b-8192";
+    private static final String GROQ_MODEL = "llama-3.3-70b-versatile";
 
     @Autowired
     private MammaryScanRepo mammaryScanRepository;
