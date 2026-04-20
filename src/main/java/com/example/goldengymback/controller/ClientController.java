@@ -1,5 +1,5 @@
 package com.example.goldengymback.controller;
-
+import org.springframework.security.core.Authentication;
 import com.example.goldengymback.model.Client;
 import com.example.goldengymback.model.User;
 import com.example.goldengymback.repository.UserRepository;
@@ -65,6 +65,21 @@ public class ClientController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("ERREUR: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/delete-all-mine")
+    public ResponseEntity<String> deleteAllMyClients(Authentication authentication) {
+        try {
+            Long medecinId = (Long) authentication.getPrincipal();
+            List<Client> clients = clientService.getClientsByMedecinId(medecinId);
+            for (Client c : clients) {
+                clientRepository.deleteById(c.getId());
+            }
+            return ResponseEntity.ok("Supprimé : " + clients.size() + " clients");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erreur: " + e.getMessage());
         }
     }
 }
