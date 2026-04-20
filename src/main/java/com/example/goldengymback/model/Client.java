@@ -21,12 +21,12 @@ public class Client {
     private String prenom;
     private String renseignementsCliniques;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "medecin_id")
-    @JsonIgnoreProperties({"password", "mammaryScans"})
+    @JsonIgnoreProperties({"mammaryScans", "password", "clients"})
     private User medecin;
-    
-    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+
+    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnoreProperties("client")
     private List<MammaryScan> mammaryScans = new ArrayList<>();
 }

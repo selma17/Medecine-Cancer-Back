@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 @RestController
@@ -41,18 +42,29 @@ public class ClientController {
     }
 
     @GetMapping("/by-medecin")
-    public ResponseEntity<List<Client>> getMyClients(Authentication authentication) {
+    public ResponseEntity<?> getMyClients(Authentication authentication) {
         try {
             if (authentication == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
             Long medecinId = (Long) authentication.getPrincipal();
             List<Client> clients = clientService.getClientsByMedecinId(medecinId);
-            return ResponseEntity.ok(clients);
+            
+            // Retourner seulement les données essentielles
+            List<Map<String, Object>> result = clients.stream().map(c -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", c.getId());
+                map.put("nom", c.getNom());
+                map.put("prenom", c.getPrenom());
+                map.put("renseignementsCliniques", c.getRenseignementsCliniques());
+                return map;
+            }).collect(java.util.stream.Collectors.toList());
+            
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("ERREUR by-medecin: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("ERREUR: " + e.getMessage());
         }
     }
 }
