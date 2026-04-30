@@ -19,6 +19,8 @@ public class Client {
 
     private String nom;
     private String prenom;
+    private String dateNaissance;
+    private String telephone;
     private String renseignementsCliniques;
 
     @ManyToOne(fetch = FetchType.LAZY)
