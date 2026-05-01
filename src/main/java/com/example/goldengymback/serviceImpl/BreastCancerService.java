@@ -63,8 +63,10 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         requestBody.put("messages", List.of(
             Map.of("role", "system", "content",
                 "Tu es un radiologue expert en imagerie mammaire. " +
-                "Tu analyses les données d'examens mammographiques et échographiques " +
-                "et tu fournis un score ACR et une conduite à tenir. " +
+                "Tu analyses les données d'examens mammographiques et échographiques. " +
+                "IMPORTANT : La mammographie et l'échographie examinent les MÊMES seins. " +
+                "Les masses décrites en mammographie et en échographie sont les MÊMES masses " +
+                "vues sous deux modalités différentes. Ne jamais les compter en double. " +
                 "Réponds toujours en français. " +
                 "Format obligatoire en fin de réponse : 'ACR : X (Type Y). Action recommandée : [action]' " +
                 "où X est entre 1 et 5, Y est A, B ou C, " +
@@ -113,7 +115,6 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             );
 
             if (!validConduites.contains(conduite)) {
-                // Chercher une conduite valide dans le texte
                 for (String valid : validConduites) {
                     if (conduite.contains(valid)) {
                         conduite = valid;
@@ -133,7 +134,9 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
 
     private String createPrompt(MammaryScan scan) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("Analyse cet examen mammaire :\n");
+        prompt.append("Analyse cet examen mammaire complet :\n\n");
+
+        prompt.append("=== MAMMOGRAPHIE ===\n");
         prompt.append("- Densité mammaire : ").append(scan.getDensiteMammaire()).append("\n");
         prompt.append("- Asymétrie : ").append(scan.isAsymetrie() ? "Oui" : "Non").append("\n");
         if (scan.isAsymetrie()) {
@@ -145,8 +148,59 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             prompt.append("  - Types : ").append(scan.getTypesCalcifications()).append("\n");
             prompt.append("  - Suspectes : ").append(scan.getCalcificationsSuspectes()).append("\n");
         }
+
+        if (scan.getMassesMammographie() != null && !scan.getMassesMammographie().isEmpty()) {
+            prompt.append("- Nombre de masses à la mammographie : ")
+                  .append(scan.getMassesMammographie().size()).append("\n");
+            for (int i = 0; i < scan.getMassesMammographie().size(); i++) {
+                var m = scan.getMassesMammographie().get(i);
+                prompt.append("  Masse ").append(i + 1).append(" (mammographie) :\n");
+                prompt.append("    Localisation : ").append(m.getLocalisation()).append("\n");
+                prompt.append("    Forme : ").append(m.getForme()).append("\n");
+                prompt.append("    Contours : ").append(m.getContours()).append("\n");
+                prompt.append("    Densité : ").append(m.getDensite()).append("\n");
+            }
+        }
+
+        prompt.append("\n=== ÉCHOGRAPHIE ===\n");
+        prompt.append("RAPPEL : Ces masses sont les MÊMES que celles de la mammographie,\n");
+        prompt.append("décrites sous une modalité différente. Ne pas les compter en double.\n");
         prompt.append("- Échostructure : ").append(scan.getEchostructureMammaire()).append("\n");
-        prompt.append("\nFournis le score ACR et la conduite à tenir.");
+
+        if (scan.getMassesEchostructure() != null && !scan.getMassesEchostructure().isEmpty()) {
+            prompt.append("- Caractéristiques échographiques des masses :\n");
+            for (int i = 0; i < scan.getMassesEchostructure().size(); i++) {
+                var m = scan.getMassesEchostructure().get(i);
+                prompt.append("  Masse ").append(i + 1).append(" (échographie) :\n");
+                prompt.append("    Localisation : ").append(m.getLocalisation()).append("\n");
+                prompt.append("    Mesure : ").append(m.getMesure()).append(" mm\n");
+                prompt.append("    Forme : ").append(m.getForme()).append("\n");
+                prompt.append("    Contours : ").append(m.getContours()).append("\n");
+                prompt.append("    Densité : ").append(m.getDensite()).append("\n");
+                prompt.append("    Orientation : ").append(m.getOrientation()).append("\n");
+                prompt.append("    Comportement : ")
+                      .append(m.getComportementDesFaisceauxUltrasons()).append("\n");
+            }
+        }
+
+        if (scan.getSignesAssociesEchostructure() != null && !scan.getSignesAssociesEchostructure().isEmpty()) {
+            prompt.append("- Signes associés échographie : ")
+                  .append(String.join(", ", scan.getSignesAssociesEchostructure())).append("\n");
+        }
+
+        if (scan.getCasSpeciaux() != null && !scan.getCasSpeciaux().isEmpty()) {
+            prompt.append("- Cas spéciaux : \n");
+            for (var cas : scan.getCasSpeciaux()) {
+                prompt.append("  • ").append(cas.getNom());
+                if (cas.getLocalisation() != null && !cas.getLocalisation().isBlank()) {
+                    prompt.append(" (localisation : ").append(cas.getLocalisation()).append(")");
+                }
+                prompt.append("\n");
+            }
+        }
+
+        prompt.append("\nFournis le score ACR et la conduite à tenir.\n");
+        prompt.append("Rappel final : mammographie et échographie décrivent les MÊMES masses.");
         return prompt.toString();
     }
 }
