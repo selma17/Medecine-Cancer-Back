@@ -20,11 +20,11 @@ import java.util.regex.Pattern;
 @Service
 public class BreastCancerService implements com.example.goldengymback.service.BreastCancerService {
 
-    @Value("${groq.api.key}")
-    private String groqApiKey;
+    @Value("${openrouter.api.key}")
+    private String openrouterApiKey;
 
-    private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-    private static final String GROQ_MODEL = "llama-3.3-70b-versatile";
+    private static final String OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+    private static final String OPENROUTER_MODEL = "deepseek/deepseek-v4-flash:free";
 
     @Autowired
     private MammaryScanRepo mammaryScanRepository;
@@ -35,7 +35,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
                 .orElseThrow(() -> new RuntimeException("Scan not found for ID: " + scanId));
 
         String prompt = createPrompt(scan);
-        String aiResponse = callGroqApi(prompt);
+        String aiResponse = callOpenRouterApi(prompt);
         updateScanWithAiResponse(aiResponse, scan);
 
         return aiResponse;
@@ -43,7 +43,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
 
     @Override
     public String getDiagnosticFromData(String description) {
-        String aiResponse = callGroqApi(description);
+        String aiResponse = callOpenRouterApi(description);
 
         if (aiResponse == null || aiResponse.trim().isEmpty()) {
             throw new RuntimeException("Réponse IA vide ou invalide.");
@@ -52,14 +52,16 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         return aiResponse;
     }
 
-    private String callGroqApi(String prompt) {
+    private String callOpenRouterApi(String prompt) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + groqApiKey);
+        headers.set("Authorization", "Bearer " + openrouterApiKey);
         headers.set("Content-Type", "application/json");
+        headers.set("HTTP-Referer", "https://srv-d7dqlh9j2pic73fplqa0.onrender.com");
+        headers.set("X-Title", "CancerIA");
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", GROQ_MODEL);
+        requestBody.put("model", OPENROUTER_MODEL);
         requestBody.put("messages", List.of(
             Map.of("role", "system", "content",
                 "Tu es un radiologue expert en imagerie mammaire. " +
@@ -81,7 +83,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
 
         try {
             ResponseEntity<Map> response = restTemplate.exchange(
-                GROQ_API_URL, HttpMethod.POST, entity, Map.class
+                OPENROUTER_API_URL, HttpMethod.POST, entity, Map.class
             );
             Map<String, Object> responseBody = response.getBody();
 
@@ -92,9 +94,9 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
                     return (String) message.get("content");
                 }
             }
-            throw new RuntimeException("Réponse invalide de l'API Groq");
+            throw new RuntimeException("Réponse invalide de l'API OpenRouter");
         } catch (Exception e) {
-            throw new RuntimeException("Erreur appel API Groq: " + e.getMessage());
+            throw new RuntimeException("Erreur appel API OpenRouter: " + e.getMessage());
         }
     }
 
