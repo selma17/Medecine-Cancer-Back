@@ -68,7 +68,17 @@ public class ClientController {
                 .body("ERREUR: " + e.getMessage());
         }
     }
-
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteClient(
+            @PathVariable Long id,
+            Authentication authentication) {
+        try {
+            clientService.deleteClient(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
     @DeleteMapping("/delete-all-mine")
     public ResponseEntity<String> deleteAllMyClients(Authentication authentication) {
         try {
