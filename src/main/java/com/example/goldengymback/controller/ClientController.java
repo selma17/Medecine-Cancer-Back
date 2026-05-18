@@ -49,17 +49,18 @@ public class ClientController {
             }
             Long medecinId = (Long) authentication.getPrincipal();
             List<Client> clients = clientService.getClientsByMedecinId(medecinId);
-            
-            // Retourner seulement les données essentielles
+
             List<Map<String, Object>> result = clients.stream().map(c -> {
                 Map<String, Object> map = new HashMap<>();
                 map.put("id", c.getId());
                 map.put("nom", c.getNom());
                 map.put("prenom", c.getPrenom());
+                map.put("dateNaissance", c.getDateNaissance());
+                map.put("telephone", c.getTelephone());
                 map.put("renseignementsCliniques", c.getRenseignementsCliniques());
                 return map;
             }).collect(java.util.stream.Collectors.toList());
-            
+
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             e.printStackTrace();
