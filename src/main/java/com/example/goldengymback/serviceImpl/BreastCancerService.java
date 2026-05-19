@@ -29,6 +29,36 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     @Autowired
     private MammaryScanRepo mammaryScanRepository;
 
+    // ─── Prompt système ────────────────────────────────────────────────────────
+    private static final String SYSTEM_PROMPT =
+        "Tu es un radiologue expert en imagerie mammaire spécialisé dans la classification BI-RADS ACR 2013. " +
+        "RÈGLE FONDAMENTALE : La mammographie et l'échographie examinent les MÊMES seins. " +
+        "Les masses décrites dans les deux modalités sont les MÊMES masses vues différemment. " +
+        "Ne jamais les compter en double. " +
+        "Réponds toujours en français. " +
+        "\n\nCLASSIFICATION BI-RADS ACR 2013 STRICTE :\n" +
+        "- ACR 1 : Examen normal — Surveillance habituelle\n" +
+        "- ACR 2 : Anomalie bénigne certaine (kyste simple, ganglion, calcifications bénignes typiques) — Surveillance habituelle\n" +
+        "- ACR 3 : Anomalie probablement bénigne (probabilité de malignité < 2%) — Surveillance à court terme 6 mois\n" +
+        "- ACR 4 : Anomalie suspecte (probabilité 2-95%) — Biopsie recommandée\n" +
+        "  * ACR 4A : Faible suspicion (2-10%) — Biopsie\n" +
+        "  * ACR 4B : Suspicion intermédiaire (10-50%) — Biopsie\n" +
+        "  * ACR 4C : Suspicion modérément élevée (50-95%) — Biopsie\n" +
+        "- ACR 5 : Hautement suspect de malignité (> 95%) — Biopsie indispensable\n" +
+        "\nRÈGLES DE CLASSIFICATION :\n" +
+        "- Une masse à contours circonscrits et forme ovale = ACR 3 minimum.\n" +
+        "- Une masse à contours spiculés ou irréguliers = ACR 4 minimum.\n" +
+        "- Des calcifications suspectes = ACR 4 minimum.\n" +
+        "- Si un sein contient plusieurs lésions, retenir la lésion la plus péjorative pour la classification finale de ce sein.\n" +
+        "\nCLASSIFICATION PAR SEIN :\n" +
+        "- Donner un score ACR séparé pour le sein DROIT et le sein GAUCHE.\n" +
+        "\nFORMAT OBLIGATOIRE en fin de réponse (dernières lignes, sur des lignes séparées) :\n" +
+        "ACR sein droit : X. Action recommandée : [action]\n" +
+        "ACR sein gauche : X. Action recommandée : [action]\n" +
+        "où X est entre 1 et 5 (si ACR 4, préciser le sous-type : 4A, 4B ou 4C), " +
+        "et [action] est exactement l'une de : Surveillance, Biopsie, Ablation chirurgicale, Traitement médical.";
+
+    // ─── Point d'entrée principal ──────────────────────────────────────────────
     @Override
     public String getAcrScore(Long scanId) {
         MammaryScan scan = mammaryScanRepository.findById(scanId)
@@ -52,6 +82,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         return aiResponse;
     }
 
+    // ─── Appel API OpenRouter ──────────────────────────────────────────────────
     private String callOpenRouterApi(String prompt) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -63,32 +94,10 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", OPENROUTER_MODEL);
         requestBody.put("messages", List.of(
-            Map.of("role", "system", "content",
-                "Tu es un radiologue expert en imagerie mammaire spécialisé dans la classification BI-RADS ACR 2013. " +
-                "Tu analyses les données d'examens mammographiques et échographiques. " +
-                "IMPORTANT : La mammographie et l'échographie examinent les MÊMES seins. " +
-                "Les masses décrites en mammographie et en échographie sont les MÊMES masses vues sous deux modalités différentes. Ne jamais les compter en double. " +
-                "Réponds toujours en français. " +
-                "CLASSIFICATION BI-RADS ACR 2013 STRICTE — respecte exactement ces définitions :\n" +
-                "- ACR 1 : Examen normal, aucune anomalie — Surveillance habituelle\n" +
-                "- ACR 2 : Anomalie bénigne certaine (kyste simple, ganglion, calcifications bénignes typiques) — Surveillance habituelle\n" +
-                "- ACR 3 : Anomalie probablement bénigne (probabilité de malignité < 2%) — Surveillance à court terme 6 mois\n" +
-                "- ACR 4 : Anomalie suspecte (probabilité de malignité 2-95%) — Biopsie recommandée\n" +
-                "  * ACR 4A : Faible suspicion de malignité (2-10%) — Biopsie\n" +
-                "  * ACR 4B : Suspicion intermédiaire (10-50%) — Biopsie\n" +
-                "  * ACR 4C : Suspicion modérément élevée (50-95%) — Biopsie\n" +
-                "- ACR 5 : Anomalie hautement suspecte de malignité (probabilité > 95%) — Biopsie indispensable\n" +
-                "RÈGLE ABSOLUE : Une masse à contours circonscrits et forme ovale = ACR 3 minimum. " +
-                "Une masse à contours spiculés ou irréguliers = ACR 4 minimum. " +
-                "Des calcifications suspectes = ACR 4 minimum. " +
-                "FORMAT OBLIGATOIRE en fin de réponse (dernière ligne) : 'ACR : X. Action recommandée : [action]' " +
-                "où X est entre 1 et 5 (si ACR 4, préciser le sous-type : 4A, 4B ou 4C), " +
-                "et [action] est exactement l'une de : Surveillance, Biopsie, Ablation chirurgicale, Traitement médical. " +
-                "NE PAS inclure de Type (A, B, C) dans la réponse."
-            ),
+            Map.of("role", "system", "content", SYSTEM_PROMPT),
             Map.of("role", "user", "content", prompt)
         ));
-        requestBody.put("max_tokens", 1000);
+        requestBody.put("max_tokens", 1500);
         requestBody.put("temperature", 0);
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
@@ -112,55 +121,175 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         }
     }
 
+    // ─── Parsing de la réponse IA et mise à jour du scan ──────────────────────
     private void updateScanWithAiResponse(String aiResponse, MammaryScan scan) {
-        Pattern pattern = Pattern.compile(
-            "ACR\\s*[:\\-]?\\s*(\\d)\\s*\\(Type\\s*([ABC])\\).*?Action recommandée\\s*[:\\-]?\\s*(.+)",
+
+        // Patterns pour sein droit et sein gauche
+        Pattern droitPattern = Pattern.compile(
+            "ACR\\s+sein\\s+droit\\s*[:\\-]?\\s*([0-9][ABC]?).*?Action\\s+recommandée\\s*[:\\-]?\\s*(.+?)(?=\\n|ACR\\s+sein\\s+gauche|$)",
             Pattern.DOTALL | Pattern.CASE_INSENSITIVE
         );
-        Matcher matcher = pattern.matcher(aiResponse);
+        Pattern gauchePattern = Pattern.compile(
+            "ACR\\s+sein\\s+gauche\\s*[:\\-]?\\s*([0-9][ABC]?).*?Action\\s+recommandée\\s*[:\\-]?\\s*(.+?)(?=\\n|$)",
+            Pattern.DOTALL | Pattern.CASE_INSENSITIVE
+        );
 
-        if (matcher.find()) {
-            String acrScore = matcher.group(1).trim();
-            String acrType = matcher.group(2).trim();
-            String conduite = matcher.group(3).trim();
+        Matcher droitMatcher  = droitPattern.matcher(aiResponse);
+        Matcher gaucheMatcher = gauchePattern.matcher(aiResponse);
 
-            List<String> validConduites = List.of(
-                "Surveillance", "Biopsie", "Ablation chirurgicale", "Traitement médical"
+        List<String> validConduites = List.of(
+            "Surveillance", "Biopsie", "Ablation chirurgicale", "Traitement médical"
+        );
+
+        String acrDroit    = null;
+        String conduiteDroit = null;
+        String acrGauche   = null;
+        String conduiteGauche = null;
+
+        if (droitMatcher.find()) {
+            acrDroit     = droitMatcher.group(1).trim();
+            conduiteDroit = normalizeConduite(droitMatcher.group(2).trim(), validConduites);
+        }
+
+        if (gaucheMatcher.find()) {
+            acrGauche     = gaucheMatcher.group(1).trim();
+            conduiteGauche = normalizeConduite(gaucheMatcher.group(2).trim(), validConduites);
+        }
+
+        if (acrDroit == null && acrGauche == null) {
+            // Fallback : ancien format global (ACR : X)
+            Pattern fallback = Pattern.compile(
+                "ACR\\s*[:\\-]?\\s*(\\d[ABC]?).*?Action\\s+recommandée\\s*[:\\-]?\\s*(.+)",
+                Pattern.DOTALL | Pattern.CASE_INSENSITIVE
             );
-
-            if (!validConduites.contains(conduite)) {
-                for (String valid : validConduites) {
-                    if (conduite.contains(valid)) {
-                        conduite = valid;
-                        break;
-                    }
-                }
+            Matcher fm = fallback.matcher(aiResponse);
+            if (fm.find()) {
+                String acrGlobal  = fm.group(1).trim();
+                String conduiteGlobal = normalizeConduite(fm.group(2).trim(), validConduites);
+                // Stocker le score global dans les deux champs
+                scan.setConclusionIA(acrGlobal);
+                scan.setConduiteATenir(conduiteGlobal);
+                mammaryScanRepository.save(scan);
+                return;
             }
-
-            scan.setConclusionIA(acrScore);
-            scan.setAcrType(acrType);
-            scan.setConduiteATenir(conduite);
-            mammaryScanRepository.save(scan);
-        } else {
             throw new RuntimeException("Format de réponse IA invalide. Réponse: " + aiResponse);
         }
+
+        // Stocker les résultats par sein
+        // Le score global = le plus péjoratif des deux
+        String acrGlobal = computeGlobalAcr(acrDroit, acrGauche);
+        String conduiteGlobale = priorityConduite(conduiteDroit, conduiteGauche, validConduites);
+
+        scan.setConclusionIA(acrGlobal);
+        scan.setConduiteATenir(conduiteGlobale);
+
+        // Stocker les détails par sein si les champs existent dans le modèle
+        // (ajouter ces champs dans MammaryScan si ce n'est pas encore fait)
+        if (acrDroit != null)    scan.setAcrDroit(acrDroit);
+        if (conduiteDroit != null) scan.setRecommandationDroit(conduiteDroit);
+        if (acrGauche != null)   scan.setAcrGauche(acrGauche);
+        if (conduiteGauche != null) scan.setRecommandationGauche(conduiteGauche);
+
+        // Conserver la réponse IA complète pour affichage dans le rapport
+        scan.setFullAiResponse(aiResponse);
+
+        mammaryScanRepository.save(scan);
     }
 
+    // ─── Utilitaires ──────────────────────────────────────────────────────────
+
+    private String normalizeConduite(String raw, List<String> validConduites) {
+        if (raw == null) return "Surveillance";
+        String cleaned = raw.split("\\.")[0].trim();
+        for (String valid : validConduites) {
+            if (cleaned.equalsIgnoreCase(valid)) return valid;
+        }
+        for (String valid : validConduites) {
+            if (cleaned.contains(valid)) return valid;
+        }
+        return "Surveillance"; // valeur par défaut
+    }
+
+    /**
+     * Retourne le score ACR le plus élevé entre deux scores (ex. "4B" > "3").
+     */
+    private String computeGlobalAcr(String acrDroit, String acrGauche) {
+        if (acrDroit == null)  return acrGauche != null ? acrGauche : "1";
+        if (acrGauche == null) return acrDroit;
+
+        int numDroit  = Integer.parseInt(String.valueOf(acrDroit.charAt(0)));
+        int numGauche = Integer.parseInt(String.valueOf(acrGauche.charAt(0)));
+
+        if (numDroit > numGauche) return acrDroit;
+        if (numGauche > numDroit) return acrGauche;
+
+        // Même chiffre → comparer les sous-types (4C > 4B > 4A)
+        char subDroit  = acrDroit.length() > 1  ? acrDroit.charAt(1)  : '0';
+        char subGauche = acrGauche.length() > 1 ? acrGauche.charAt(1) : '0';
+        return subDroit >= subGauche ? acrDroit : acrGauche;
+    }
+
+    /**
+     * Retourne la conduite la plus urgente entre les deux seins.
+     * Ordre d'urgence : Biopsie > Ablation chirurgicale > Traitement médical > Surveillance
+     */
+    private String priorityConduite(String c1, String c2, List<String> validConduites) {
+        if (c1 == null) return c2 != null ? c2 : "Surveillance";
+        if (c2 == null) return c1;
+
+        Map<String, Integer> priority = Map.of(
+            "Surveillance",          1,
+            "Traitement médical",    2,
+            "Ablation chirurgicale", 3,
+            "Biopsie",               4
+        );
+
+        int p1 = priority.getOrDefault(c1, 1);
+        int p2 = priority.getOrDefault(c2, 1);
+        return p1 >= p2 ? c1 : c2;
+    }
+
+    // ─── Construction du prompt utilisateur ───────────────────────────────────
     private String createPrompt(MammaryScan scan) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("Analyse cet examen mammaire complet :\n\n");
 
+        // ── Mammographie ──────────────────────────────────────────────────────
         prompt.append("=== MAMMOGRAPHIE ===\n");
         prompt.append("- Densité mammaire : ").append(scan.getDensiteMammaire()).append("\n");
+
         prompt.append("- Asymétrie : ").append(scan.isAsymetrie() ? "Oui" : "Non").append("\n");
         if (scan.isAsymetrie()) {
             prompt.append("  - Type : ").append(scan.getTypeAsymetrie()).append("\n");
+            if (scan.getLocalisationAsymetrie() != null && !scan.getLocalisationAsymetrie().isBlank()) {
+                prompt.append("  - Localisation : ").append(scan.getLocalisationAsymetrie()).append("\n");
+            }
         }
+
         prompt.append("- Distorsion architecturale : ").append(scan.isDistorsionArchitecturale() ? "Oui" : "Non").append("\n");
+        if (scan.isDistorsionArchitecturale() && scan.getLocalisationDistorsion() != null && !scan.getLocalisationDistorsion().isBlank()) {
+            prompt.append("  - Localisation : ").append(scan.getLocalisationDistorsion()).append("\n");
+        }
+
         prompt.append("- Calcifications : ").append(scan.isCalcifications() ? "Oui" : "Non").append("\n");
         if (scan.isCalcifications()) {
             prompt.append("  - Types : ").append(scan.getTypesCalcifications()).append("\n");
             prompt.append("  - Suspectes : ").append(scan.getCalcificationsSuspectes()).append("\n");
+            if (scan.getLocalisationCalcifications() != null && !scan.getLocalisationCalcifications().isBlank()) {
+                prompt.append("  - Localisation : ").append(scan.getLocalisationCalcifications()).append("\n");
+            }
+        }
+
+        // Signes associés mammographie avec localisation
+        if (scan.getSignesAssociesMammographie() != null && !scan.getSignesAssociesMammographie().isEmpty()) {
+            prompt.append("- Signes associés (mammographie) :\n");
+            for (var signe : scan.getSignesAssociesMammographie()) {
+                prompt.append("  • ").append(signe.getNom());
+                if (signe.getLocalisation() != null && !signe.getLocalisation().isBlank()) {
+                    prompt.append(" (localisation : ").append(signe.getLocalisation()).append(")");
+                }
+                prompt.append("\n");
+            }
         }
 
         if (scan.getMassesMammographie() != null && !scan.getMassesMammographie().isEmpty()) {
@@ -169,6 +298,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             for (int i = 0; i < scan.getMassesMammographie().size(); i++) {
                 var m = scan.getMassesMammographie().get(i);
                 prompt.append("  Masse ").append(i + 1).append(" (mammographie) :\n");
+                prompt.append("    Sein : ").append(m.getSein() != null ? m.getSein() : "non précisé").append("\n");
                 prompt.append("    Localisation : ").append(m.getLocalisation()).append("\n");
                 prompt.append("    Forme : ").append(m.getForme()).append("\n");
                 prompt.append("    Contours : ").append(m.getContours()).append("\n");
@@ -176,6 +306,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             }
         }
 
+        // ── Échographie ───────────────────────────────────────────────────────
         prompt.append("\n=== ÉCHOGRAPHIE ===\n");
         prompt.append("RAPPEL : Ces masses sont les MÊMES que celles de la mammographie,\n");
         prompt.append("décrites sous une modalité différente. Ne pas les compter en double.\n");
@@ -186,24 +317,37 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             for (int i = 0; i < scan.getMassesEchostructure().size(); i++) {
                 var m = scan.getMassesEchostructure().get(i);
                 prompt.append("  Masse ").append(i + 1).append(" (échographie) :\n");
+                prompt.append("    Sein : ").append(m.getSein() != null ? m.getSein() : "non précisé").append("\n");
                 prompt.append("    Localisation : ").append(m.getLocalisation()).append("\n");
                 prompt.append("    Mesure : ").append(m.getMesure()).append(" mm\n");
                 prompt.append("    Forme : ").append(m.getForme()).append("\n");
                 prompt.append("    Contours : ").append(m.getContours()).append("\n");
                 prompt.append("    Densité : ").append(m.getDensite()).append("\n");
                 prompt.append("    Orientation : ").append(m.getOrientation()).append("\n");
-                prompt.append("    Comportement : ")
-                      .append(m.getComportementDesFaisceauxUltrasons()).append("\n");
+                prompt.append("    Comportement : ").append(m.getComportementDesFaisceauxUltrasons()).append("\n");
             }
         }
 
+        // Signes associés échographie avec localisation
         if (scan.getSignesAssociesEchostructure() != null && !scan.getSignesAssociesEchostructure().isEmpty()) {
-            prompt.append("- Signes associés échographie : ")
-                  .append(String.join(", ", scan.getSignesAssociesEchostructure())).append("\n");
+            prompt.append("- Signes associés (échographie) :\n");
+            for (var signe : scan.getSignesAssociesEchostructure()) {
+                if (signe instanceof String) {
+                    prompt.append("  • ").append(signe).append("\n");
+                } else {
+                    // Objet avec nom + localisation
+                    var s = (com.example.goldengymback.model.SigneAssocie) signe;
+                    prompt.append("  • ").append(s.getNom());
+                    if (s.getLocalisation() != null && !s.getLocalisation().isBlank()) {
+                        prompt.append(" (localisation : ").append(s.getLocalisation()).append(")");
+                    }
+                    prompt.append("\n");
+                }
+            }
         }
 
         if (scan.getCasSpeciaux() != null && !scan.getCasSpeciaux().isEmpty()) {
-            prompt.append("- Cas spéciaux : \n");
+            prompt.append("- Cas spéciaux :\n");
             for (var cas : scan.getCasSpeciaux()) {
                 prompt.append("  • ").append(cas.getNom());
                 if (cas.getLocalisation() != null && !cas.getLocalisation().isBlank()) {
@@ -213,9 +357,12 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             }
         }
 
-        prompt.append("\nFournis la conduite à tenir et donne la classification BIRADS de l'ACR 2013.\n");
+        prompt.append("\nFournis l'analyse complète et la classification BI-RADS ACR 2013 pour chaque sein séparément.\n");
         prompt.append("Rappel final : mammographie et échographie décrivent les MÊMES masses.\n");
-        prompt.append("Termine par sur une nouvelle ligne : ACR : X. Action recommandée : ...");
+        prompt.append("Termine obligatoirement par :\n");
+        prompt.append("ACR sein droit : X. Action recommandée : ...\n");
+        prompt.append("ACR sein gauche : X. Action recommandée : ...");
+
         return prompt.toString();
     }
 }
