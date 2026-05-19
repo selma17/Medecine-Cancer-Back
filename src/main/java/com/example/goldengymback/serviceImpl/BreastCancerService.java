@@ -75,13 +75,17 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     public String getDiagnosticFromData(String description) {
         String aiResponse = callOpenRouterApi(description);
 
+        // Ajouter ce log temporaire
+        System.out.println("=== RÉPONSE IA BRUTE ===");
+        System.out.println(aiResponse);
+        System.out.println("========================");
+
         if (aiResponse == null || aiResponse.trim().isEmpty()) {
             throw new RuntimeException("Réponse IA vide ou invalide.");
         }
 
         return aiResponse;
     }
-
     // ─── Appel API OpenRouter ──────────────────────────────────────────────────
     private String callOpenRouterApi(String prompt) {
         RestTemplate restTemplate = new RestTemplate();
@@ -106,6 +110,9 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             ResponseEntity<Map> response = restTemplate.exchange(
                 OPENROUTER_API_URL, HttpMethod.POST, entity, Map.class
             );
+            System.out.println("=== STATUS HTTP ===");
+            System.out.println(response.getStatusCode());
+            System.out.println(response.getBody());
             Map<String, Object> responseBody = response.getBody();
 
             if (responseBody != null && responseBody.containsKey("choices")) {
