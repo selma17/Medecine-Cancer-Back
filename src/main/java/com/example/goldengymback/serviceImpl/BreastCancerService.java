@@ -74,12 +74,15 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
                 "- ACR 2 : Anomalie bénigne certaine (kyste simple, ganglion, calcifications bénignes typiques) — Surveillance habituelle\n" +
                 "- ACR 3 : Anomalie probablement bénigne (probabilité de malignité < 2%) — Surveillance à court terme 6 mois\n" +
                 "- ACR 4 : Anomalie suspecte (probabilité de malignité 2-95%) — Biopsie recommandée\n" +
+                "  * ACR 4A : Faible suspicion de malignité (2-10%) — Biopsie\n" +
+                "  * ACR 4B : Suspicion intermédiaire (10-50%) — Biopsie\n" +
+                "  * ACR 4C : Suspicion modérément élevée (50-95%) — Biopsie\n" +
                 "- ACR 5 : Anomalie hautement suspecte de malignité (probabilité > 95%) — Biopsie indispensable\n" +
                 "RÈGLE ABSOLUE : Une masse à contours circonscrits et forme ovale = ACR 3 minimum. " +
                 "Une masse à contours spiculés ou irréguliers = ACR 4 minimum. " +
                 "Des calcifications suspectes = ACR 4 minimum. " +
                 "FORMAT OBLIGATOIRE en fin de réponse (dernière ligne) : 'ACR : X. Action recommandée : [action]' " +
-                "où X est entre 1 et 5, " +
+                "où X est entre 1 et 5 (si ACR 4, préciser le sous-type : 4A, 4B ou 4C), " +
                 "et [action] est exactement l'une de : Surveillance, Biopsie, Ablation chirurgicale, Traitement médical. " +
                 "NE PAS inclure de Type (A, B, C) dans la réponse."
             ),

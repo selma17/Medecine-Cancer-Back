@@ -183,13 +183,15 @@ public class MammaryScanServiceImpl implements MammaryScanService {
     }
 
     private String extractAcrScore(String aiResponse) {
-        String acrPattern = "ACR\\s*[:\\-]?\\s*(\\d)";
+        // Accepte 1, 2, 3, 4, 4A, 4B, 4C, 5
+        String acrPattern = "ACR\\s*[:\\-]?\\s*(\\d[ABC]?)";
         Pattern pattern = Pattern.compile(acrPattern, Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(aiResponse);
 
         if (matcher.find()) {
-            logger.info("Found ACR score: " + matcher.group(1));
-            return matcher.group(1);
+            String score = matcher.group(1).toUpperCase();
+            logger.info("Found ACR score: " + score);
+            return score;
         }
 
         logger.warning("Could not extract ACR score from: " + aiResponse);
@@ -197,7 +199,7 @@ public class MammaryScanServiceImpl implements MammaryScanService {
     }
 
     private String extractAcrType(String aiResponse) {
-        return null;
+        return null; // Type ACR supprimé
     }
 
     private String extractConduiteATenir(String aiResponse) {
