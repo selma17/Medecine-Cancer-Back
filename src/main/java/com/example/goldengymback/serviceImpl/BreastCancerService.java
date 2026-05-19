@@ -110,9 +110,8 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             ResponseEntity<Map> response = restTemplate.exchange(
                 OPENROUTER_API_URL, HttpMethod.POST, entity, Map.class
             );
-            System.out.println("=== STATUS HTTP ===");
-            System.out.println(response.getStatusCode());
-            System.out.println(response.getBody());
+            System.out.println("=== STATUS HTTP: " + response.getStatusCode());  // ← ajoute
+            System.out.println("=== BODY: " + response.getBody());  
             Map<String, Object> responseBody = response.getBody();
 
             if (responseBody != null && responseBody.containsKey("choices")) {
