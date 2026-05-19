@@ -32,31 +32,32 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     // ─── Prompt système ────────────────────────────────────────────────────────
     private static final String SYSTEM_PROMPT =
         "Tu es un radiologue expert en imagerie mammaire spécialisé dans la classification BI-RADS ACR 2013. " +
+        "Réponds toujours en français.\n\n" +
         "RÈGLE FONDAMENTALE : La mammographie et l'échographie examinent les MÊMES seins. " +
-        "Les masses décrites dans les deux modalités sont les MÊMES masses vues différemment. " +
-        "Ne jamais les compter en double. " +
-        "Réponds toujours en français. " +
-        "\n\nCLASSIFICATION BI-RADS ACR 2013 STRICTE :\n" +
-        "- ACR 1 : Examen normal — Surveillance habituelle\n" +
-        "- ACR 2 : Anomalie bénigne certaine (kyste simple, ganglion, calcifications bénignes typiques) — Surveillance habituelle\n" +
-        "- ACR 3 : Anomalie probablement bénigne (probabilité de malignité < 2%) — Surveillance à court terme 6 mois\n" +
-        "- ACR 4 : Anomalie suspecte (probabilité 2-95%) — Biopsie recommandée\n" +
-        "  * ACR 4A : Faible suspicion (2-10%) — Biopsie\n" +
-        "  * ACR 4B : Suspicion intermédiaire (10-50%) — Biopsie\n" +
-        "  * ACR 4C : Suspicion modérément élevée (50-95%) — Biopsie\n" +
-        "- ACR 5 : Hautement suspect de malignité (> 95%) — Biopsie indispensable\n" +
-        "\nRÈGLES DE CLASSIFICATION :\n" +
-        "- Une masse à contours circonscrits et forme ovale = ACR 3 minimum.\n" +
-        "- Une masse à contours spiculés ou irréguliers = ACR 4 minimum.\n" +
-        "- Des calcifications suspectes = ACR 4 minimum.\n" +
-        "- Si un sein contient plusieurs lésions, retenir la lésion la plus péjorative pour la classification finale de ce sein.\n" +
-        "\nCLASSIFICATION PAR SEIN :\n" +
-        "- Donner un score ACR séparé pour le sein DROIT et le sein GAUCHE.\n" +
-        "\nFORMAT OBLIGATOIRE en fin de réponse (dernières lignes, sur des lignes séparées) :\n" +
+        "Les masses décrites dans les deux modalités sont les MÊMES masses. Ne jamais les compter en double.\n\n" +
+        "CLASSIFICATION BI-RADS ACR 2013 STRICTE :\n" +
+        "- ACR 1 : Examen normal — Surveillance\n" +
+        "- ACR 2 : Anomalie bénigne certaine — Surveillance\n" +
+        "- ACR 3 : Probablement bénigne (malignité < 2%) — Surveillance\n" +
+        "- ACR 4A : Faible suspicion (2-10%) — Biopsie\n" +
+        "- ACR 4B : Suspicion intermédiaire (10-50%) — Biopsie\n" +
+        "- ACR 4C : Suspicion élevée (50-95%) — Biopsie\n" +
+        "- ACR 5 : Hautement suspect (> 95%) — Biopsie\n\n" +
+        "RÈGLES STRICTES :\n" +
+        "- Masse ovale + contours circonscrits = ACR 3 minimum\n" +
+        "- Masse irrégulière + contours spiculés = ACR 4C minimum\n" +
+        "- Calcifications suspectes = ACR 4 minimum\n" +
+        "- Plusieurs lésions dans un sein : retenir la plus péjorative\n\n" +
+        "INSTRUCTION ABSOLUE — FORMAT DE RÉPONSE :\n" +
+        "Tu DOIS terminer ta réponse par EXACTEMENT ces deux lignes, sans exception :\n" +
         "ACR sein droit : X. Action recommandée : [action]\n" +
-        "ACR sein gauche : X. Action recommandée : [action]\n" +
-        "où X est entre 1 et 5 (si ACR 4, préciser le sous-type : 4A, 4B ou 4C), " +
-        "et [action] est exactement l'une de : Surveillance, Biopsie, Ablation chirurgicale, Traitement médical.";
+        "ACR sein gauche : X. Action recommandée : [action]\n\n" +
+        "Où X est le score ACR (1, 2, 3, 4A, 4B, 4C ou 5).\n" +
+        "Et [action] est OBLIGATOIREMENT l'un de ces mots exacts : Surveillance, Biopsie, Ablation chirurgicale, Traitement médical.\n\n" +
+        "EXEMPLE de fin de réponse correcte :\n" +
+        "ACR sein droit : 3. Action recommandée : Surveillance\n" +
+        "ACR sein gauche : 4C. Action recommandée : Biopsie\n\n" +
+        "NE PAS écrire ACR sans préciser le sein. Toujours deux lignes séparées, une par sein.";
 
     // ─── Point d'entrée principal ──────────────────────────────────────────────
     @Override
@@ -75,17 +76,13 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     public String getDiagnosticFromData(String description) {
         String aiResponse = callOpenRouterApi(description);
 
-        // Ajouter ce log temporaire
-        System.out.println("=== RÉPONSE IA BRUTE ===");
-        System.out.println(aiResponse);
-        System.out.println("========================");
-
         if (aiResponse == null || aiResponse.trim().isEmpty()) {
             throw new RuntimeException("Réponse IA vide ou invalide.");
         }
 
         return aiResponse;
     }
+
     // ─── Appel API OpenRouter ──────────────────────────────────────────────────
     private String callOpenRouterApi(String prompt) {
         RestTemplate restTemplate = new RestTemplate();
@@ -110,8 +107,6 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             ResponseEntity<Map> response = restTemplate.exchange(
                 OPENROUTER_API_URL, HttpMethod.POST, entity, Map.class
             );
-            System.out.println("=== STATUS HTTP: " + response.getStatusCode());  // ← ajoute
-            System.out.println("=== BODY: " + response.getBody());  
             Map<String, Object> responseBody = response.getBody();
 
             if (responseBody != null && responseBody.containsKey("choices")) {
