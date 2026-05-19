@@ -153,12 +153,9 @@ public class MammaryScanServiceImpl implements MammaryScanService {
         }
 
         // INSTRUCTIONS POUR L’IA
-        sb.append("\nMerci de fournir :\n");
-        sb.append("1. Une **analyse médicale complète** en français basée sur les observations ci-dessus.\n");
-        sb.append("2. Une explication clinique des signes anormaux, leur signification (lésion bénigne, suspecte, ou maligne), et les implications diagnostiques.\n");
-        sb.append("3. En conclusion, donne le **score ACR (1 à 5)** avec son **type de densité mammaire (A, B ou C)** et **l'action clinique recommandée** : 'Surveillance', 'Biopsie', 'Ablation chirurgicale', ou 'Traitement médical'.\n");
-        sb.append("Termine toujours par : ACR : X (Type Y). Action recommandée : ...");
-
+        sb.append("\nFournis la conduite à tenir et donne la classification BIRADS de l'ACR 2013.\n");
+        sb.append("Rappel final : mammographie et échographie décrivent les MÊMES masses.\n");
+        sb.append("Termine toujours par sur une nouvelle ligne : ACR : X. Action recommandée : ...");
         return sb.toString();
     }
 
@@ -200,29 +197,6 @@ public class MammaryScanServiceImpl implements MammaryScanService {
     }
 
     private String extractAcrType(String aiResponse) {
-        // Pattern pour extraire le type ACR (A, B ou C) depuis la réponse
-        String acrTypePattern = "ACR\\s*[:\\-]?\\s*\\d\\s*\\(Type\\s*([ABC])\\)";
-        Pattern pattern = Pattern.compile(acrTypePattern, Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(aiResponse);
-
-        if (matcher.find()) {
-            String acrType = matcher.group(1).trim();
-            logger.info("Found ACR type: " + acrType);
-            return acrType;
-        }
-
-        // Pattern alternatif si le format est différent
-        String alternativePattern = "Type\\s*([ABC])";
-        pattern = Pattern.compile(alternativePattern, Pattern.CASE_INSENSITIVE);
-        matcher = pattern.matcher(aiResponse);
-
-        if (matcher.find()) {
-            String acrType = matcher.group(1).trim();
-            logger.info("Found ACR type (alternative): " + acrType);
-            return acrType;
-        }
-
-        logger.warning("Could not extract ACR type from: " + aiResponse);
         return null;
     }
 

@@ -64,15 +64,24 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         requestBody.put("model", OPENROUTER_MODEL);
         requestBody.put("messages", List.of(
             Map.of("role", "system", "content",
-                "Tu es un radiologue expert en imagerie mammaire. " +
+                "Tu es un radiologue expert en imagerie mammaire spécialisé dans la classification BI-RADS ACR 2013. " +
                 "Tu analyses les données d'examens mammographiques et échographiques. " +
                 "IMPORTANT : La mammographie et l'échographie examinent les MÊMES seins. " +
-                "Les masses décrites en mammographie et en échographie sont les MÊMES masses " +
-                "vues sous deux modalités différentes. Ne jamais les compter en double. " +
+                "Les masses décrites en mammographie et en échographie sont les MÊMES masses vues sous deux modalités différentes. Ne jamais les compter en double. " +
                 "Réponds toujours en français. " +
-                "Format obligatoire en fin de réponse : 'ACR : X (Type Y). Action recommandée : [action]' " +
-                "où X est entre 1 et 5, Y est A, B ou C, " +
-                "et [action] est exactement l'une de : Surveillance, Biopsie, Ablation chirurgicale, Traitement médical."
+                "CLASSIFICATION BI-RADS ACR 2013 STRICTE — respecte exactement ces définitions :\n" +
+                "- ACR 1 : Examen normal, aucune anomalie — Surveillance habituelle\n" +
+                "- ACR 2 : Anomalie bénigne certaine (kyste simple, ganglion, calcifications bénignes typiques) — Surveillance habituelle\n" +
+                "- ACR 3 : Anomalie probablement bénigne (probabilité de malignité < 2%) — Surveillance à court terme 6 mois\n" +
+                "- ACR 4 : Anomalie suspecte (probabilité de malignité 2-95%) — Biopsie recommandée\n" +
+                "- ACR 5 : Anomalie hautement suspecte de malignité (probabilité > 95%) — Biopsie indispensable\n" +
+                "RÈGLE ABSOLUE : Une masse à contours circonscrits et forme ovale = ACR 3 minimum. " +
+                "Une masse à contours spiculés ou irréguliers = ACR 4 minimum. " +
+                "Des calcifications suspectes = ACR 4 minimum. " +
+                "FORMAT OBLIGATOIRE en fin de réponse (dernière ligne) : 'ACR : X. Action recommandée : [action]' " +
+                "où X est entre 1 et 5, " +
+                "et [action] est exactement l'une de : Surveillance, Biopsie, Ablation chirurgicale, Traitement médical. " +
+                "NE PAS inclure de Type (A, B, C) dans la réponse."
             ),
             Map.of("role", "user", "content", prompt)
         ));
@@ -201,8 +210,8 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             }
         }
 
-        prompt.append("\nFournis le score ACR et la conduite à tenir.\n");
-        prompt.append("Rappel final : mammographie et échographie décrivent les MÊMES masses.");
-        return prompt.toString();
+        prompt.append("\nFournis la conduite à tenir et donne la classification BIRADS de l'ACR 2013.\n");
+        prompt.append("Rappel final : mammographie et échographie décrivent les MÊMES masses.\n");
+        prompt.append("Termine par sur une nouvelle ligne : ACR : X. Action recommandée : ...");
     }
 }
