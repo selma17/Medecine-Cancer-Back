@@ -213,5 +213,6 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         prompt.append("\nFournis la conduite à tenir et donne la classification BIRADS de l'ACR 2013.\n");
         prompt.append("Rappel final : mammographie et échographie décrivent les MÊMES masses.\n");
         prompt.append("Termine par sur une nouvelle ligne : ACR : X. Action recommandée : ...");
+        return prompt.toString();
     }
 }
