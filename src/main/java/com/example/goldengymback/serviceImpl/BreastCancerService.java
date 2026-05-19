@@ -124,13 +124,12 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     // ─── Parsing de la réponse IA et mise à jour du scan ──────────────────────
     private void updateScanWithAiResponse(String aiResponse, MammaryScan scan) {
 
-        // Patterns pour sein droit et sein gauche
         Pattern droitPattern = Pattern.compile(
-            "ACR\\s+sein\\s+droit\\s*[:\\-]?\\s*([0-9][ABC]?).*?Action\\s+recommandée\\s*[:\\-]?\\s*(.+?)(?=\\n|ACR\\s+sein\\s+gauche|$)",
+            "ACR\\s+sein\\s+droit\\s*[:\\-]?\\s*([0-9][ABC]?).*?Action\\s+recommand[ée]+e?\\s*[:\\-]?\\s*(.+?)(?=\\n|ACR\\s+sein\\s+gauche|$)",
             Pattern.DOTALL | Pattern.CASE_INSENSITIVE
         );
         Pattern gauchePattern = Pattern.compile(
-            "ACR\\s+sein\\s+gauche\\s*[:\\-]?\\s*([0-9][ABC]?).*?Action\\s+recommandée\\s*[:\\-]?\\s*(.+?)(?=\\n|$)",
+            "ACR\\s+sein\\s+gauche\\s*[:\\-]?\\s*([0-9][ABC]?).*?Action\\s+recommand[ée]+e?\\s*[:\\-]?\\s*(.+?)(?=\\n|$)",
             Pattern.DOTALL | Pattern.CASE_INSENSITIVE
         );
 
@@ -141,56 +140,50 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             "Surveillance", "Biopsie", "Ablation chirurgicale", "Traitement médical"
         );
 
-        String acrDroit    = null;
-        String conduiteDroit = null;
-        String acrGauche   = null;
+        String acrDroit       = null;
+        String conduiteDroit  = null;
+        String acrGauche      = null;
         String conduiteGauche = null;
 
         if (droitMatcher.find()) {
-            acrDroit     = droitMatcher.group(1).trim();
+            acrDroit      = droitMatcher.group(1).trim();
             conduiteDroit = normalizeConduite(droitMatcher.group(2).trim(), validConduites);
         }
 
         if (gaucheMatcher.find()) {
-            acrGauche     = gaucheMatcher.group(1).trim();
+            acrGauche      = gaucheMatcher.group(1).trim();
             conduiteGauche = normalizeConduite(gaucheMatcher.group(2).trim(), validConduites);
         }
 
+        // Fallback : ancien format global si l'IA n'a pas respecté le format par sein
         if (acrDroit == null && acrGauche == null) {
-            // Fallback : ancien format global (ACR : X)
             Pattern fallback = Pattern.compile(
-                "ACR\\s*[:\\-]?\\s*(\\d[ABC]?).*?Action\\s+recommandée\\s*[:\\-]?\\s*(.+)",
+                "ACR\\s*[:\\-]?\\s*(\\d[ABC]?).*?Action\\s+recommand[ée]+e?\\s*[:\\-]?\\s*(.+)",
                 Pattern.DOTALL | Pattern.CASE_INSENSITIVE
             );
             Matcher fm = fallback.matcher(aiResponse);
             if (fm.find()) {
-                String acrGlobal  = fm.group(1).trim();
+                String acrGlobal      = fm.group(1).trim();
                 String conduiteGlobal = normalizeConduite(fm.group(2).trim(), validConduites);
-                // Stocker le score global dans les deux champs
                 scan.setConclusionIA(acrGlobal);
                 scan.setConduiteATenir(conduiteGlobal);
+                scan.setFullAiResponse(aiResponse);
                 mammaryScanRepository.save(scan);
                 return;
             }
             throw new RuntimeException("Format de réponse IA invalide. Réponse: " + aiResponse);
         }
 
-        // Stocker les résultats par sein
-        // Le score global = le plus péjoratif des deux
-        String acrGlobal = computeGlobalAcr(acrDroit, acrGauche);
+        // Score global = le plus péjoratif des deux seins
+        String acrGlobal       = computeGlobalAcr(acrDroit, acrGauche);
         String conduiteGlobale = priorityConduite(conduiteDroit, conduiteGauche, validConduites);
 
         scan.setConclusionIA(acrGlobal);
         scan.setConduiteATenir(conduiteGlobale);
-
-        // Stocker les détails par sein si les champs existent dans le modèle
-        // (ajouter ces champs dans MammaryScan si ce n'est pas encore fait)
-        if (acrDroit != null)    scan.setAcrDroit(acrDroit);
-        if (conduiteDroit != null) scan.setRecommandationDroit(conduiteDroit);
-        if (acrGauche != null)   scan.setAcrGauche(acrGauche);
-        if (conduiteGauche != null) scan.setRecommandationGauche(conduiteGauche);
-
-        // Conserver la réponse IA complète pour affichage dans le rapport
+        scan.setAcrDroit(acrDroit);
+        scan.setAcrGauche(acrGauche);
+        scan.setRecommandationDroit(conduiteDroit);
+        scan.setRecommandationGauche(conduiteGauche);
         scan.setFullAiResponse(aiResponse);
 
         mammaryScanRepository.save(scan);
@@ -207,12 +200,9 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         for (String valid : validConduites) {
             if (cleaned.contains(valid)) return valid;
         }
-        return "Surveillance"; // valeur par défaut
+        return "Surveillance";
     }
 
-    /**
-     * Retourne le score ACR le plus élevé entre deux scores (ex. "4B" > "3").
-     */
     private String computeGlobalAcr(String acrDroit, String acrGauche) {
         if (acrDroit == null)  return acrGauche != null ? acrGauche : "1";
         if (acrGauche == null) return acrDroit;
@@ -223,16 +213,11 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         if (numDroit > numGauche) return acrDroit;
         if (numGauche > numDroit) return acrGauche;
 
-        // Même chiffre → comparer les sous-types (4C > 4B > 4A)
-        char subDroit  = acrDroit.length() > 1  ? acrDroit.charAt(1)  : '0';
+        char subDroit  = acrDroit.length()  > 1 ? acrDroit.charAt(1)  : '0';
         char subGauche = acrGauche.length() > 1 ? acrGauche.charAt(1) : '0';
         return subDroit >= subGauche ? acrDroit : acrGauche;
     }
 
-    /**
-     * Retourne la conduite la plus urgente entre les deux seins.
-     * Ordre d'urgence : Biopsie > Ablation chirurgicale > Traitement médical > Surveillance
-     */
     private String priorityConduite(String c1, String c2, List<String> validConduites) {
         if (c1 == null) return c2 != null ? c2 : "Surveillance";
         if (c2 == null) return c1;
@@ -267,8 +252,13 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         }
 
         prompt.append("- Distorsion architecturale : ").append(scan.isDistorsionArchitecturale() ? "Oui" : "Non").append("\n");
-        if (scan.isDistorsionArchitecturale() && scan.getLocalisationDistorsion() != null && !scan.getLocalisationDistorsion().isBlank()) {
-            prompt.append("  - Localisation : ").append(scan.getLocalisationDistorsion()).append("\n");
+        if (scan.isDistorsionArchitecturale()) {
+            if (scan.getOptionDistorsionArchitecturale() != null && !scan.getOptionDistorsionArchitecturale().isBlank()) {
+                prompt.append("  - Option : ").append(scan.getOptionDistorsionArchitecturale()).append("\n");
+            }
+            if (scan.getLocalisationDistorsion() != null && !scan.getLocalisationDistorsion().isBlank()) {
+                prompt.append("  - Localisation : ").append(scan.getLocalisationDistorsion()).append("\n");
+            }
         }
 
         prompt.append("- Calcifications : ").append(scan.isCalcifications() ? "Oui" : "Non").append("\n");
@@ -280,13 +270,16 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             }
         }
 
-        // Signes associés mammographie avec localisation
+        // Signes associés mammographie — List<String> avec localisations parallèles
         if (scan.getSignesAssociesMammographie() != null && !scan.getSignesAssociesMammographie().isEmpty()) {
             prompt.append("- Signes associés (mammographie) :\n");
-            for (var signe : scan.getSignesAssociesMammographie()) {
-                prompt.append("  • ").append(signe.getNom());
-                if (signe.getLocalisation() != null && !signe.getLocalisation().isBlank()) {
-                    prompt.append(" (localisation : ").append(signe.getLocalisation()).append(")");
+            List<String> locsMammo = scan.getLocalisationsSignesMammographie();
+            for (int i = 0; i < scan.getSignesAssociesMammographie().size(); i++) {
+                String signe = scan.getSignesAssociesMammographie().get(i);
+                prompt.append("  • ").append(signe);
+                if (locsMammo != null && i < locsMammo.size()
+                        && locsMammo.get(i) != null && !locsMammo.get(i).isBlank()) {
+                    prompt.append(" (localisation : ").append(locsMammo.get(i)).append(")");
                 }
                 prompt.append("\n");
             }
@@ -298,7 +291,6 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             for (int i = 0; i < scan.getMassesMammographie().size(); i++) {
                 var m = scan.getMassesMammographie().get(i);
                 prompt.append("  Masse ").append(i + 1).append(" (mammographie) :\n");
-                prompt.append("    Sein : ").append(m.getSein() != null ? m.getSein() : "non précisé").append("\n");
                 prompt.append("    Localisation : ").append(m.getLocalisation()).append("\n");
                 prompt.append("    Forme : ").append(m.getForme()).append("\n");
                 prompt.append("    Contours : ").append(m.getContours()).append("\n");
@@ -317,7 +309,6 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             for (int i = 0; i < scan.getMassesEchostructure().size(); i++) {
                 var m = scan.getMassesEchostructure().get(i);
                 prompt.append("  Masse ").append(i + 1).append(" (échographie) :\n");
-                prompt.append("    Sein : ").append(m.getSein() != null ? m.getSein() : "non précisé").append("\n");
                 prompt.append("    Localisation : ").append(m.getLocalisation()).append("\n");
                 prompt.append("    Mesure : ").append(m.getMesure()).append(" mm\n");
                 prompt.append("    Forme : ").append(m.getForme()).append("\n");
@@ -328,21 +319,18 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             }
         }
 
-        // Signes associés échographie avec localisation
+        // Signes associés échographie — List<String> avec localisations parallèles
         if (scan.getSignesAssociesEchostructure() != null && !scan.getSignesAssociesEchostructure().isEmpty()) {
             prompt.append("- Signes associés (échographie) :\n");
-            for (var signe : scan.getSignesAssociesEchostructure()) {
-                if (signe instanceof String) {
-                    prompt.append("  • ").append(signe).append("\n");
-                } else {
-                    // Objet avec nom + localisation
-                    var s = (com.example.goldengymback.model.SigneAssocie) signe;
-                    prompt.append("  • ").append(s.getNom());
-                    if (s.getLocalisation() != null && !s.getLocalisation().isBlank()) {
-                        prompt.append(" (localisation : ").append(s.getLocalisation()).append(")");
-                    }
-                    prompt.append("\n");
+            List<String> locsEcho = scan.getLocalisationsSignesEchostructure();
+            for (int i = 0; i < scan.getSignesAssociesEchostructure().size(); i++) {
+                String signe = scan.getSignesAssociesEchostructure().get(i);
+                prompt.append("  • ").append(signe);
+                if (locsEcho != null && i < locsEcho.size()
+                        && locsEcho.get(i) != null && !locsEcho.get(i).isBlank()) {
+                    prompt.append(" (localisation : ").append(locsEcho.get(i)).append(")");
                 }
+                prompt.append("\n");
             }
         }
 
