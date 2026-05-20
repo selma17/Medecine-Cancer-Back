@@ -346,11 +346,37 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             }
         }
 
-        prompt.append("\nFournis l'analyse complète et la classification BI-RADS ACR 2013 pour chaque sein séparément.\n");
+        // Détecter les seins concernés
+        boolean hasDroit = false;
+        boolean hasGauche = false;
+        if (scan.getMassesMammographie() != null) {
+            for (var m : scan.getMassesMammographie()) {
+                if (m.getSein() != null) {
+                    if (m.getSein().toLowerCase().contains("droit")) hasDroit = true;
+                    if (m.getSein().toLowerCase().contains("gauche")) hasGauche = true;
+                }
+            }
+        }
+        if (scan.getMassesEchostructure() != null) {
+            for (var m : scan.getMassesEchostructure()) {
+                if (m.getSein() != null) {
+                    if (m.getSein().toLowerCase().contains("droit")) hasDroit = true;
+                    if (m.getSein().toLowerCase().contains("gauche")) hasGauche = true;
+                }
+            }
+        }
+        // Si aucun sein précisé, on considère les deux
+        if (!hasDroit && !hasGauche) { hasDroit = true; hasGauche = true; }
+
+        prompt.append("\nFournis l'analyse et la classification BI-RADS ACR 2013.\n");
         prompt.append("Rappel final : mammographie et échographie décrivent les MÊMES masses.\n");
-        prompt.append("Termine obligatoirement par :\n");
-        prompt.append("ACR sein droit : X. Action recommandée : ...\n");
-        prompt.append("ACR sein gauche : X. Action recommandée : ...");
+        prompt.append("\nSEINS CONCERNÉS PAR CET EXAMEN :\n");
+        if (hasDroit)  prompt.append("- Sein DROIT : présence de masses/anomalies\n");
+        if (hasGauche) prompt.append("- Sein GAUCHE : présence de masses/anomalies\n");
+        prompt.append("\nTermine obligatoirement par (une ligne par sein concerné) :\n");
+        if (hasDroit)  prompt.append("ACR sein droit : X. Action recommandée : [action]\n");
+        if (hasGauche) prompt.append("ACR sein gauche : X. Action recommandée : [action]\n");
+        prompt.append("Si un sein contient plusieurs masses, retenir la plus péjorative pour ce sein.");
 
         return prompt.toString();
     }
