@@ -156,7 +156,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             conduiteGauche = normalizeConduite(gaucheMatcher.group(2).trim(), validConduites);
         }
 
-        // Fallback : ancien format global si l'IA n'a pas respecté le format par sein
+        // Fallback : l'IA n'a pas respecté le format par sein → on distribue le score global
         if (acrDroit == null && acrGauche == null) {
             Pattern fallback = Pattern.compile(
                 "ACR\\s*[:\\-]?\\s*(\\d[ABC]?).*?Action\\s+recommand[ée]+e?\\s*[:\\-]?\\s*(.+)",
@@ -169,6 +169,26 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
                 scan.setConclusionIA(acrGlobal);
                 scan.setConduiteATenir(conduiteGlobal);
                 scan.setFullAiResponse(aiResponse);
+
+                // Distribuer le score global aux seins qui ont des masses
+                boolean hasDroitFallback  = scan.getMassesMammographie().stream()
+                    .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().contains("droit"))
+                    || scan.getMassesEchostructure().stream()
+                    .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().contains("droit"));
+                boolean hasGaucheFallback = scan.getMassesMammographie().stream()
+                    .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().contains("gauche"))
+                    || scan.getMassesEchostructure().stream()
+                    .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().contains("gauche"));
+
+                // Si aucun sein précisé dans les masses, distribuer aux deux
+                if (!hasDroitFallback && !hasGaucheFallback) {
+                    hasDroitFallback  = true;
+                    hasGaucheFallback = true;
+                }
+
+                if (hasDroitFallback)  { scan.setAcrDroit(acrGlobal);  scan.setRecommandationDroit(conduiteGlobal);  }
+                if (hasGaucheFallback) { scan.setAcrGauche(acrGlobal); scan.setRecommandationGauche(conduiteGlobal); }
+
                 mammaryScanRepository.save(scan);
                 return;
             }
