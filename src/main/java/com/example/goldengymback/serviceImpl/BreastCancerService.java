@@ -118,7 +118,9 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
                 if (!choices.isEmpty()) {
                     Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
                     String content = (String) message.get("content");
-                    if (content != null && !content.trim().isEmpty()) return content;
+                    if (content != null && !content.trim().isEmpty()) { 
+                        System.out.println("=== RÉPONSE IA BRUTE ===\n" + content);
+                        return content;
                 }
             }
             throw new RuntimeException("Réponse invalide de l'API OpenAI");
@@ -132,7 +134,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     // ─── Parsing et sauvegarde ─────────────────────────────────────────────────
     private void updateScanWithAiResponse(String aiResponse, MammaryScan scan) {
         Pattern droitPattern = Pattern.compile(
-            "ACR\\s+sein\\s+droit\\s*[:\\-]?\\s*([0-9][ABC]?)\\s*\\.?\\s*Action\\s+recommand[ée]+e?\\s*[:\\-]?\\s*([^\\n]+)",
+            "ACR\\s+sein\\s+droit[e]?\\s*[:\\-]?\\s*([0-9][ABC]?)\\s*\\.?\\s*Action\\s+recommand[ée]+e?\\s*[:\\-]?\\s*([^\\n]+)",
             Pattern.CASE_INSENSITIVE);
         Pattern gauchePattern = Pattern.compile(
             "ACR\\s+sein\\s+gauche\\s*[:\\-]?\\s*([0-9][ABC]?)\\s*\\.?\\s*Action\\s+recommand[ée]+e?\\s*[:\\-]?\\s*([^\\n]+)",
@@ -186,10 +188,11 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     }
 
     private boolean hasSeins(MammaryScan scan, String side) {
+        // "droit" matche "droit" ET "droite", "gauche" matche "gauche"
         return (scan.getMassesMammographie() != null && scan.getMassesMammographie().stream()
-                .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().contains(side)))
+                .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().startsWith(side)))
             || (scan.getMassesEchostructure() != null && scan.getMassesEchostructure().stream()
-                .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().contains(side)));
+                .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().startsWith(side)));
     }
 
     private String normalizeConduite(String raw, List<String> valid) {
