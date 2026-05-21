@@ -21,16 +21,11 @@ import java.util.regex.Pattern;
 @Service
 public class BreastCancerService implements com.example.goldengymback.service.BreastCancerService {
 
-    @Value("${openrouter.api.key}")
-    private String openrouterApiKey;
+    @Value("${openai.api.key}")
+    private String openaiApiKey;
 
-    private static final String OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-
-    private static final String[] MODELS = {
-        "google/gemini-2.0-flash-exp:free",
-        "meta-llama/llama-3.3-70b-instruct:free",
-        "deepseek/deepseek-r1:free"
-    };
+    private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+    private static final String MODEL = "gpt-4o-mini";
 
     @Autowired
     private MammaryScanRepo mammaryScanRepository;
@@ -84,45 +79,28 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         MammaryScan scan = mammaryScanRepository.findById(scanId)
                 .orElseThrow(() -> new RuntimeException("Scan not found for ID: " + scanId));
         String prompt = createPrompt(scan);
-        String aiResponse = callOpenRouterApiWithFallback(prompt);
+        String aiResponse = callOpenAiApi(prompt);
         updateScanWithAiResponse(aiResponse, scan);
         return aiResponse;
     }
 
     @Override
     public String getDiagnosticFromData(String description) {
-        String aiResponse = callOpenRouterApiWithFallback(description);
+        String aiResponse = callOpenAiApi(description);
         if (aiResponse == null || aiResponse.trim().isEmpty())
             throw new RuntimeException("Réponse IA vide ou invalide.");
         return aiResponse;
     }
 
-    // ─── Appel API avec fallback ───────────────────────────────────────────────
-    private String callOpenRouterApiWithFallback(String prompt) {
-        Exception lastException = null;
-        for (String model : MODELS) {
-            try {
-                String result = callOpenRouterApi(prompt, model);
-                if (result != null && !result.trim().isEmpty()) return result;
-            } catch (Exception e) {
-                lastException = e;
-                System.out.println("Modèle " + model + " échoué : " + e.getMessage());
-            }
-        }
-        throw new RuntimeException("Tous les modèles ont échoué. Dernière erreur : " +
-            (lastException != null ? lastException.getMessage() : "inconnue"));
-    }
-
-    private String callOpenRouterApi(String prompt, String model) {
+    // ─── Appel API OpenAI ──────────────────────────────────────────────────────
+    private String callOpenAiApi(String prompt) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + openrouterApiKey);
+        headers.set("Authorization", "Bearer " + openaiApiKey);
         headers.set("Content-Type", "application/json");
-        headers.set("HTTP-Referer", "https://srv-d7dqlh9j2pic73fplqa0.onrender.com");
-        headers.set("X-Title", "CancerIA");
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", model);
+        requestBody.put("model", MODEL);
         requestBody.put("messages", List.of(
             Map.of("role", "system", "content", SYSTEM_PROMPT),
             Map.of("role", "user", "content", prompt)
@@ -133,7 +111,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
         try {
             ResponseEntity<Map> response = restTemplate.exchange(
-                OPENROUTER_API_URL, HttpMethod.POST, entity, Map.class);
+                OPENAI_API_URL, HttpMethod.POST, entity, Map.class);
             Map<String, Object> body = response.getBody();
             if (body != null && body.containsKey("choices")) {
                 List<Map<String, Object>> choices = (List<Map<String, Object>>) body.get("choices");
@@ -143,11 +121,11 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
                     if (content != null && !content.trim().isEmpty()) return content;
                 }
             }
-            throw new RuntimeException("Réponse invalide du modèle " + model);
+            throw new RuntimeException("Réponse invalide de l'API OpenAI");
         } catch (HttpClientErrorException e) {
-            throw new RuntimeException("HTTP " + e.getStatusCode() + " — " + model);
+            throw new RuntimeException("Erreur OpenAI HTTP " + e.getStatusCode() + " : " + e.getResponseBodyAsString());
         } catch (Exception e) {
-            throw new RuntimeException("Erreur " + model + ": " + e.getMessage());
+            throw new RuntimeException("Erreur appel OpenAI : " + e.getMessage());
         }
     }
 
@@ -237,7 +215,9 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     private String priorityConduite(String c1, String c2, List<String> valid) {
         if (c1 == null) return c2 != null ? c2 : "Surveillance";
         if (c2 == null) return c1;
-        Map<String, Integer> p = Map.of("Surveillance", 1, "Traitement médical", 2, "Ablation chirurgicale", 3, "Biopsie", 4);
+        Map<String, Integer> p = Map.of(
+            "Surveillance", 1, "Traitement médical", 2,
+            "Ablation chirurgicale", 3, "Biopsie", 4);
         return p.getOrDefault(c1, 1) >= p.getOrDefault(c2, 1) ? c1 : c2;
     }
 
@@ -247,19 +227,16 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         p.append("Analyse cet examen mammaire et fournis la classification BI-RADS ACR 2013.\n");
         p.append("Les champs absents signifient que la donnée n'a pas été recueillie — classe avec ce qui est disponible.\n\n");
 
-        // ── MAMMOGRAPHIE ──────────────────────────────────────────────────────
         p.append("=== MAMMOGRAPHIE ===\n");
         appendIfNotEmpty(p, "Densité mammaire : ", scan.getDensiteMammaire());
 
-        // Asymétrie
         if (scan.isAsymetrie()) {
             p.append("Asymétrie : Oui");
-            if (notEmpty(scan.getTypeAsymetrie()))        p.append(" — ").append(scan.getTypeAsymetrie());
+            if (notEmpty(scan.getTypeAsymetrie()))         p.append(" — ").append(scan.getTypeAsymetrie());
             if (notEmpty(scan.getLocalisationAsymetrie())) p.append(" — localisation : ").append(scan.getLocalisationAsymetrie());
             p.append("\n");
         }
 
-        // Distorsion
         if (scan.isDistorsionArchitecturale()) {
             p.append("Distorsion architecturale : Oui");
             if (notEmpty(scan.getOptionDistorsionArchitecturale())) p.append(" — ").append(scan.getOptionDistorsionArchitecturale());
@@ -267,41 +244,32 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             p.append("\n");
         }
 
-        // Calcifications
         if (scan.isCalcifications()) {
             p.append("Calcifications : Oui");
             if (notEmpty(scan.getLocalisationCalcifications()))
                 p.append(" — localisation : ").append(scan.getLocalisationCalcifications());
             p.append("\n");
-            // Type : bénignes ou suspectes
-            if (notEmpty(scan.getTypesCalcifications())) {
+            if (notEmpty(scan.getTypesCalcifications()))
                 p.append("  Type : ").append(scan.getTypesCalcifications()).append("\n");
-            }
-            if (notEmpty(scan.getCalcificationsBenignes())) {
+            if (notEmpty(scan.getCalcificationsBenignes()))
                 p.append("  Calcifications bénignes : ").append(scan.getCalcificationsBenignes()).append("\n");
-            }
-            if (notEmpty(scan.getCalcificationsSuspectes())) {
+            if (notEmpty(scan.getCalcificationsSuspectes()))
                 p.append("  Calcifications suspectes : ").append(scan.getCalcificationsSuspectes()).append("\n");
-            }
-            if (notEmpty(scan.getDistributionMicrocalcifications())) {
+            if (notEmpty(scan.getDistributionMicrocalcifications()))
                 p.append("  Distribution : ").append(scan.getDistributionMicrocalcifications()).append("\n");
-            }
         }
 
-        // Signes associés mammographie
         if (scan.getSignesAssociesMammographie() != null && !scan.getSignesAssociesMammographie().isEmpty()) {
             p.append("Signes associés (mammographie) :\n");
             List<String> locs = scan.getLocalisationsSignesMammographie();
             for (int i = 0; i < scan.getSignesAssociesMammographie().size(); i++) {
-                String signe = scan.getSignesAssociesMammographie().get(i);
-                p.append("  • ").append(signe);
+                p.append("  • ").append(scan.getSignesAssociesMammographie().get(i));
                 if (locs != null && i < locs.size() && notEmpty(locs.get(i)))
                     p.append(" — localisation : ").append(locs.get(i));
                 p.append("\n");
             }
         }
 
-        // Masses mammographie
         if (scan.getMassesMammographie() != null && !scan.getMassesMammographie().isEmpty()) {
             p.append("Masses mammographie (").append(scan.getMassesMammographie().size()).append(") :\n");
             for (int i = 0; i < scan.getMassesMammographie().size(); i++) {
@@ -316,32 +284,29 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             }
         }
 
-        // ── ÉCHOGRAPHIE ───────────────────────────────────────────────────────
         p.append("\n=== ÉCHOGRAPHIE ===\n");
         p.append("(Mêmes masses que la mammographie — ne pas compter en double)\n");
         appendIfNotEmpty(p, "Échostructure : ", scan.getEchostructureMammaire());
 
-        // Masses échographie
         if (scan.getMassesEchostructure() != null && !scan.getMassesEchostructure().isEmpty()) {
             p.append("Masses échographie (").append(scan.getMassesEchostructure().size()).append(") :\n");
             for (int i = 0; i < scan.getMassesEchostructure().size(); i++) {
                 var m = scan.getMassesEchostructure().get(i);
                 p.append("  M").append(i + 1).append(" :");
                 p.append(" SEIN=").append(notEmpty(m.getSein()) ? m.getSein().toUpperCase() : "?");
-                if (notEmpty(m.getLocalisation()))                       p.append(" | Loc=").append(m.getLocalisation());
-                if (notEmpty(m.getMesure()))                              p.append(" | ").append(m.getMesure()).append("mm");
-                if (notEmpty(m.getDistanceCentre()))                      p.append(" | Dist.mamelon=").append(m.getDistanceCentre()).append("mm");
-                if (notEmpty(m.getForme()))                               p.append(" | Forme=").append(m.getForme());
-                if (notEmpty(m.getContours()))                            p.append(" | Contours=").append(m.getContours());
-                if (notEmpty(m.getDensite()))                             p.append(" | Écho=").append(m.getDensite());
-                if (notEmpty(m.getOrientation()))                         p.append(" | Orient=").append(m.getOrientation());
-                if (notEmpty(m.getComportementDesFaisceauxUltrasons()))   p.append(" | Comport=").append(m.getComportementDesFaisceauxUltrasons());
-                if (notEmpty(m.getCalcifications()))                        p.append(" | Calcif=").append(m.getCalcifications());
+                if (notEmpty(m.getLocalisation()))                     p.append(" | Loc=").append(m.getLocalisation());
+                if (notEmpty(m.getMesure()))                            p.append(" | ").append(m.getMesure()).append("mm");
+                if (notEmpty(m.getDistanceCentre()))                    p.append(" | Dist.mamelon=").append(m.getDistanceCentre()).append("mm");
+                if (notEmpty(m.getForme()))                             p.append(" | Forme=").append(m.getForme());
+                if (notEmpty(m.getContours()))                          p.append(" | Contours=").append(m.getContours());
+                if (notEmpty(m.getDensite()))                           p.append(" | Écho=").append(m.getDensite());
+                if (notEmpty(m.getOrientation()))                       p.append(" | Orient=").append(m.getOrientation());
+                if (notEmpty(m.getComportementDesFaisceauxUltrasons())) p.append(" | Comport=").append(m.getComportementDesFaisceauxUltrasons());
+                if (notEmpty(m.getCalcifications()))                    p.append(" | Calcif=").append(m.getCalcifications());
                 p.append("\n");
             }
         }
 
-        // Signes associés échographie
         if (scan.getSignesAssociesEchostructure() != null && !scan.getSignesAssociesEchostructure().isEmpty()) {
             p.append("Signes associés (échographie) :\n");
             List<String> locs = scan.getLocalisationsSignesEchostructure();
@@ -353,7 +318,6 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             }
         }
 
-        // Cas spéciaux
         if (scan.getCasSpeciaux() != null && !scan.getCasSpeciaux().isEmpty()) {
             p.append("Cas spéciaux :\n");
             for (var cas : scan.getCasSpeciaux()) {
@@ -364,12 +328,11 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             }
         }
 
-        // ── SEINS CONCERNÉS ───────────────────────────────────────────────────
         boolean hasDroit  = hasSeins(scan, "droit");
         boolean hasGauche = hasSeins(scan, "gauche");
         if (!hasDroit && !hasGauche) { hasDroit = true; hasGauche = true; }
 
-        p.append("\nSEINS AVEC ANOMALIES DANS CET EXAMEN :\n");
+        p.append("\nSEINS AVEC ANOMALIES :\n");
         if (hasDroit)  p.append("- SEIN DROIT\n");
         if (hasGauche) p.append("- SEIN GAUCHE\n");
 
