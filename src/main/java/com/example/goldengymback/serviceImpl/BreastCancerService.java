@@ -118,8 +118,10 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
                 if (!choices.isEmpty()) {
                     Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
                     String content = (String) message.get("content");
-                    if (content != null && !content.trim().isEmpty())
+                    if (content != null && !content.trim().isEmpty()) {
+                        System.out.println("=== IA ===" + content); // ← ici
                         return content;
+                    }
                 }
             }
             throw new RuntimeException("Réponse invalide de l'API OpenAI");
