@@ -58,6 +58,8 @@ public class ClientController {
                 map.put("dateNaissance", c.getDateNaissance());
                 map.put("telephone", c.getTelephone());
                 map.put("renseignementsCliniques", c.getRenseignementsCliniques());
+                map.put("emailPatient", c.getEmailPatient());
+                map.put("emailMedecin", c.getEmailMedecin());
                 return map;
             }).collect(java.util.stream.Collectors.toList());
 

@@ -22,6 +22,8 @@ public class Client {
     private String dateNaissance;
     private String telephone;
     private String renseignementsCliniques;
+    private String emailPatient;
+    private String emailMedecin;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "medecin_id")
