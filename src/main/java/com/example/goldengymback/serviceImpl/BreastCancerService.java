@@ -31,38 +31,22 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     private MammaryScanRepo mammaryScanRepository;
 
     private static final String SYSTEM_PROMPT =
-        "Tu es un radiologue expert en imagerie mammaire spécialisé dans la classification BI-RADS ACR 2013.\n" +
-        "Réponds toujours en français.\n\n" +
+        "Tu es un radiologue expert. Analyse les éléments sémiologiques fournis " +
+        "(mammographie et échographie) et donne la classification ACR BI-RADS 2013 ainsi que la conduite à tenir.\n\n" +
         "RÈGLE FONDAMENTALE : La mammographie et l'échographie examinent les MÊMES seins. " +
         "Les masses décrites dans les deux modalités sont les MÊMES masses vues différemment. " +
         "Ne jamais les compter en double.\n\n" +
         "DONNÉES PARTIELLES : Certains champs peuvent être absents ou vides. " +
         "Dans ce cas, classe avec les informations disponibles sans refuser ni philosopher. " +
         "Utilise ton expertise pour compléter le raisonnement clinique.\n\n" +
-        "CLASSIFICATION BI-RADS ACR 2013 :\n" +
-        "- ACR 1 : Examen normal — Surveillance\n" +
-        "- ACR 2 : Anomalie bénigne certaine — Surveillance\n" +
-        "- ACR 3 : Probablement bénigne (malignité < 2%) — Surveillance\n" +
-        "- ACR 4A : Faible suspicion (2-10%) — Biopsie\n" +
-        "- ACR 4B : Suspicion intermédiaire (10-50%) — Biopsie\n" +
-        "- ACR 4C : Suspicion élevée (50-95%) — Biopsie\n" +
-        "- ACR 5 : Hautement suspect (> 95%) — Biopsie\n\n" +
         "RÈGLES DE CLASSIFICATION :\n" +
-        "- Masse ovale + contours circonscrits = ACR 3 minimum\n" +
-        "- Masse irrégulière ou contours spiculés = ACR 4C minimum\n" +
-        "- Calcifications suspectes (amorphes, pléomorphes, linéaires) = ACR 4 minimum\n" +
-        "- Calcifications bénignes seules = ACR 2\n" +
-        "- Plusieurs lésions dans un sein : retenir la plus péjorative\n" +
-        "- Le champ SEIN est indiqué sur chaque masse — utilise-le directement\n\n" +
+        "- Plusieurs lésions dans un sein : retenir la plus péjorative.\n" +
+        "- Le champ SEIN est indiqué sur chaque masse — utilise-le directement.\n\n" +
         "FORMAT OBLIGATOIRE — terminer la réponse par ces lignes exactes :\n" +
         "ACR sein droit : X. Action recommandée : [action]\n" +
         "ACR sein gauche : X. Action recommandée : [action]\n\n" +
         "X = 1, 2, 3, 4A, 4B, 4C ou 5\n" +
-        "[action] = exactement un de : Surveillance, Biopsie, Ablation chirurgicale, Traitement médical\n\n" +
-        "EXEMPLE :\n" +
-        "ACR sein droit : 3. Action recommandée : Surveillance\n" +
-        "ACR sein gauche : 4C. Action recommandée : Biopsie\n\n" +
-        "INTERDIT : refuser, philosopher, expliquer une impossibilité. Classifie toujours.";
+        "[action] = exactement un de : Surveillance, Biopsie, Ablation chirurgicale, Traitement médical.";
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
     private static boolean notEmpty(String s) {
@@ -118,10 +102,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
                 if (!choices.isEmpty()) {
                     Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
                     String content = (String) message.get("content");
-                    if (content != null && !content.trim().isEmpty()) {
-                        System.out.println("=== IA ===" + content); // ← ici
-                        return content;
-                    }
+                    if (content != null && !content.trim().isEmpty()) return content;
                 }
             }
             throw new RuntimeException("Réponse invalide de l'API OpenAI");
