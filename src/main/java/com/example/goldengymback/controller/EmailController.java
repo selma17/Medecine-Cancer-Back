@@ -1,17 +1,11 @@
 package com.example.goldengymback.controller;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/mail")
@@ -21,45 +15,33 @@ import java.util.Map;
 })
 public class EmailController {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    @Value("${sendgrid.api.key}")
+    private String sendgridApiKey;
 
-    /**
-     * Endpoint : POST /api/mail/send-report
-     * Body JSON :
-     * {
-     *   "recipients": ["patient@email.com", "medecin@email.com"],
-     *   "patientName": "Nom Prénom",
-     *   "doctorName": "Dr. Nom",
-     *   "date": "30/05/2026",
-     *   "acrDroit": "4C",
-     *   "acrGauche": "3",
-     *   "recommendationDroit": "Biopsie",
-     *   "recommendationGauche": "Surveillance — mammographie à 6 mois",
-     *   "pdfBase64": "JVBERi0xLjQ..."
-     * }
-     */
+    private static final String SENDGRID_URL = "https://api.sendgrid.com/v3/mail/send";
+    private static final String FROM_EMAIL   = "selmasouedsd@gmail.com";
+    private static final String FROM_NAME    = "Breast AI Report";
+
     @PostMapping("/send-report")
     public ResponseEntity<String> sendReport(@RequestBody Map<String, Object> body) {
         try {
             @SuppressWarnings("unchecked")
             List<String> recipients = (List<String>) body.get("recipients");
-            if (recipients == null || recipients.isEmpty()) {
+            if (recipients == null || recipients.isEmpty())
                 return ResponseEntity.badRequest().body("Aucun destinataire renseigné.");
-            }
 
-            String patientName         = (String) body.getOrDefault("patientName", "—");
-            String doctorName          = (String) body.getOrDefault("doctorName", "Médecin Radiologue");
-            String date                = (String) body.getOrDefault("date", "—");
-            String acrDroit            = (String) body.getOrDefault("acrDroit", "");
-            String acrGauche           = (String) body.getOrDefault("acrGauche", "");
-            String recommendationDroit = (String) body.getOrDefault("recommendationDroit", "");
-            String recommendationGauche= (String) body.getOrDefault("recommendationGauche", "");
-            String acrGlobal           = (String) body.getOrDefault("acrGlobal", "");
-            String conduiteGlobale     = (String) body.getOrDefault("conduiteGlobale", "");
-            String pdfBase64           = (String) body.get("pdfBase64");
+            String patientName          = (String) body.getOrDefault("patientName", "—");
+            String doctorName           = (String) body.getOrDefault("doctorName", "Médecin Radiologue");
+            String date                 = (String) body.getOrDefault("date", "—");
+            String acrDroit             = (String) body.getOrDefault("acrDroit", "");
+            String acrGauche            = (String) body.getOrDefault("acrGauche", "");
+            String recommendationDroit  = (String) body.getOrDefault("recommendationDroit", "");
+            String recommendationGauche = (String) body.getOrDefault("recommendationGauche", "");
+            String acrGlobal            = (String) body.getOrDefault("acrGlobal", "");
+            String conduiteGlobale      = (String) body.getOrDefault("conduiteGlobale", "");
+            String pdfBase64            = (String) body.get("pdfBase64");
 
-            // Corps du mail HTML
+            // ── Corps HTML ─────────────────────────────────────────────────
             StringBuilder html = new StringBuilder();
             html.append("<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden'>")
                 .append("<div style='background:#1B2B6B;padding:20px 24px'>")
@@ -75,24 +57,20 @@ public class EmailController {
                 .append("<tr><td style='padding:8px 12px;background:#F8FAFC;font-weight:600;color:#1B2B6B;font-size:13px;border:1px solid #e2e8f0'>Date</td>")
                 .append("<td style='padding:8px 12px;font-size:13px;border:1px solid #e2e8f0'>").append(date).append("</td></tr>");
 
-            if (!acrDroit.isEmpty()) {
+            if (!acrDroit.isEmpty())
                 html.append("<tr><td style='padding:8px 12px;background:#F8FAFC;font-weight:600;color:#1B2B6B;font-size:13px;border:1px solid #e2e8f0'>Sein droit</td>")
                     .append("<td style='padding:8px 12px;font-size:13px;border:1px solid #e2e8f0'>ACR ").append(acrDroit)
-                    .append(!recommendationDroit.isEmpty() ? " — " + recommendationDroit : "")
-                    .append("</td></tr>");
-            }
-            if (!acrGauche.isEmpty()) {
+                    .append(!recommendationDroit.isEmpty() ? " — " + recommendationDroit : "").append("</td></tr>");
+
+            if (!acrGauche.isEmpty())
                 html.append("<tr><td style='padding:8px 12px;background:#F8FAFC;font-weight:600;color:#1B2B6B;font-size:13px;border:1px solid #e2e8f0'>Sein gauche</td>")
                     .append("<td style='padding:8px 12px;font-size:13px;border:1px solid #e2e8f0'>ACR ").append(acrGauche)
-                    .append(!recommendationGauche.isEmpty() ? " — " + recommendationGauche : "")
-                    .append("</td></tr>");
-            }
-            if (acrDroit.isEmpty() && acrGauche.isEmpty() && !acrGlobal.isEmpty()) {
+                    .append(!recommendationGauche.isEmpty() ? " — " + recommendationGauche : "").append("</td></tr>");
+
+            if (acrDroit.isEmpty() && acrGauche.isEmpty() && !acrGlobal.isEmpty())
                 html.append("<tr><td style='padding:8px 12px;background:#F8FAFC;font-weight:600;color:#1B2B6B;font-size:13px;border:1px solid #e2e8f0'>Score ACR</td>")
                     .append("<td style='padding:8px 12px;font-size:13px;border:1px solid #e2e8f0'>ACR ").append(acrGlobal)
-                    .append(!conduiteGlobale.isEmpty() ? " — " + conduiteGlobale : "")
-                    .append("</td></tr>");
-            }
+                    .append(!conduiteGlobale.isEmpty() ? " — " + conduiteGlobale : "").append("</td></tr>");
 
             html.append("</table>")
                 .append("<p style='color:#64748b;font-size:12px;margin-top:16px'>Le compte rendu complet est joint en pièce jointe (PDF).</p>")
@@ -101,37 +79,52 @@ public class EmailController {
                 .append("<p style='color:#64748b;font-size:12px;margin:4px 0 0'>Médecin Radiologue — Hôpital Régional Ksar Hellal</p>")
                 .append("</div></div>");
 
-            // Préparer et envoyer le mail à chaque destinataire
-            for (String recipient : recipients) {
-                if (recipient == null || recipient.isBlank()) continue;
-
-                MimeMessage message = mailSender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-                helper.setFrom("selmasouedsd@gmail.com", "Breast AI Report");
-                helper.setTo(recipient);
-                helper.setSubject("Compte rendu écho-mammographique — " + patientName);
-                helper.setText(html.toString(), true);
-
-                // Attacher le PDF si présent
-                if (pdfBase64 != null && !pdfBase64.isBlank()) {
-                    byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64);
-                    helper.addAttachment(
-                        "rapport_" + patientName.replaceAll("\\s+", "_") + ".pdf",
-                        new org.springframework.core.io.ByteArrayResource(pdfBytes),
-                        "application/pdf"
-                    );
-                }
-
-                mailSender.send(message);
+            // ── Construction payload SendGrid ──────────────────────────────
+            List<Map<String, Object>> toList = new ArrayList<>();
+            for (String email : recipients) {
+                if (email == null || email.isBlank()) continue;
+                toList.add(Map.of("email", email));
             }
 
-            return ResponseEntity.ok("Rapport envoyé avec succès.");
+            Map<String, Object> from = Map.of("email", FROM_EMAIL, "name", FROM_NAME);
+            Map<String, Object> personalization = new HashMap<>();
+            personalization.put("to", toList);
+            personalization.put("subject", "Compte rendu écho-mammographique — " + patientName);
 
-        } catch (MessagingException e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Erreur d'envoi : " + e.getMessage());
+            Map<String, Object> content = Map.of("type", "text/html", "value", html.toString());
+
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("personalizations", List.of(personalization));
+            payload.put("from", from);
+            payload.put("content", List.of(content));
+
+            // Pièce jointe PDF
+            if (pdfBase64 != null && !pdfBase64.isBlank()) {
+                Map<String, Object> attachment = new HashMap<>();
+                attachment.put("content", pdfBase64);
+                attachment.put("type", "application/pdf");
+                attachment.put("filename", "rapport_" + patientName.replaceAll("\\s+", "_") + ".pdf");
+                attachment.put("disposition", "attachment");
+                payload.put("attachments", List.of(attachment));
+            }
+
+            // ── Appel API SendGrid ─────────────────────────────────────────
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(sendgridApiKey);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+            ResponseEntity<String> response = restTemplate.exchange(
+                SENDGRID_URL, HttpMethod.POST, request, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                return ResponseEntity.ok("Rapport envoyé avec succès.");
+            } else {
+                return ResponseEntity.status(response.getStatusCode())
+                    .body("Erreur SendGrid : " + response.getBody());
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
