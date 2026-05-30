@@ -173,18 +173,28 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     }
 
     private boolean hasSeins(MammaryScan scan, String side) {
-        // "droit" matche "droit" ET "droite", "gauche" matche "gauche"
         return (scan.getMassesMammographie() != null && scan.getMassesMammographie().stream()
                 .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().startsWith(side)))
             || (scan.getMassesEchostructure() != null && scan.getMassesEchostructure().stream()
                 .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().startsWith(side)));
     }
 
+    // ─── normalizeConduite : garde la conduite complète si elle commence par un mot clé valide
     private String normalizeConduite(String raw, List<String> valid) {
         if (raw == null) return "Surveillance";
-        String c = raw.split("\\.")[0].trim();
-        for (String v : valid) if (c.equalsIgnoreCase(v)) return v;
-        for (String v : valid) if (c.toLowerCase().contains(v.toLowerCase())) return v;
+        // Nettoyer trailing point et espaces
+        String cleaned = raw.trim().replaceAll("\\.$", "").trim();
+        // Si la conduite commence par un mot clé valide, garder la version complète
+        // (ex: "Surveillance — mammographie et échographie à 6 mois")
+        for (String v : valid) {
+            if (cleaned.toLowerCase().startsWith(v.toLowerCase())) {
+                return cleaned;
+            }
+        }
+        // Fallback : chercher le mot clé n'importe où dans la réponse
+        for (String v : valid) {
+            if (cleaned.toLowerCase().contains(v.toLowerCase())) return v;
+        }
         return "Surveillance";
     }
 
