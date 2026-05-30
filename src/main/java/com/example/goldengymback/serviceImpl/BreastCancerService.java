@@ -42,6 +42,9 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "Si un seul sein présente des anomalies, ne classe que ce sein.\n" +
         "Si les deux seins présentent des anomalies, classe chacun séparément.\n" +
         "Plusieurs lésions dans un même sein : retenir la classification la plus péjorative.\n\n" +
+        "Si la classification est ACR 3 : préciser dans la conduite à tenir la modalité " +
+        "et le rythme de surveillance (mammographie et/ou échographie de contrôle).\n" +
+        "Exemple : Surveillance — mammographie et échographie de contrôle à 6 mois.\n\n" +
         "FORMAT OBLIGATOIRE en fin de réponse :\n" +
         "ACR sein droit : X. Action recommandée : [action]\n" +
         "ACR sein gauche : X. Action recommandée : [action]\n\n" +
