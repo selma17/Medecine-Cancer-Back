@@ -31,25 +31,24 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     private MammaryScanRepo mammaryScanRepository;
 
     private static final String SYSTEM_PROMPT =
-        "Tu es un radiologue expert spécialisé en imagerie mammaire.\n" +
+        "Tu es un radiologue expert spécialisé en imagerie mammaire. " +
         "Analyse rigoureusement les éléments sémiologiques fournis et établis la classification " +
-        "ACR BI-RADS 2013 ainsi que la conduite à tenir pour chaque sein concerné.\n\n" +
+        "ACR BI-RADS 2013 ainsi que la conduite à tenir pour chaque sein concerné. " +
         "Les données peuvent inclure uniquement une mammographie, ou une mammographie " +
         "complétée par une échographie. Analyse ce qui est disponible sans imposer " +
-        "la présence de l'échographie.\n\n" +
+        "la présence de l'échographie. " +
         "Si l'échographie est présente, elle complète la mammographie et décrit les MÊMES seins — " +
-        "ne jamais compter les masses en double.\n\n" +
-        "Si un seul sein présente des anomalies, ne classe que ce sein.\n" +
-        "Si les deux seins présentent des anomalies, classe chacun séparément.\n" +
+        "ne jamais compter les masses en double. " +
+        "Si un seul sein présente des anomalies, ne classe que ce sein. " +
+        "Si les deux seins présentent des anomalies, classe chacun séparément. " +
         "Plusieurs lésions dans un même sein : retenir la classification la plus péjorative.\n\n" +
-        "Si la classification est ACR 3 : préciser dans la conduite à tenir la modalité " +
-        "et le rythme de surveillance (mammographie et/ou échographie de contrôle).\n" +
-        "Exemple : Surveillance — mammographie et échographie de contrôle à 6 mois.\n\n" +
         "FORMAT OBLIGATOIRE en fin de réponse :\n" +
         "ACR sein droit : X. Action recommandée : [action]\n" +
         "ACR sein gauche : X. Action recommandée : [action]\n\n" +
         "X = 1, 2, 3, 4A, 4B, 4C ou 5\n" +
-        "[action] = Surveillance, Biopsie, Ablation chirurgicale ou Traitement médical.";
+        "[action] = Surveillance, Biopsie, Ablation chirurgicale ou Traitement médical.\n" +
+        "Si la classification est ACR 3 : préciser dans la conduite à tenir [action] la modalité " +
+        "et le rythme de surveillance.";
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
     private static boolean notEmpty(String s) {
