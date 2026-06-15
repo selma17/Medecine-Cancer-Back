@@ -44,7 +44,12 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "Plusieurs lésions dans un même sein : retenir la classification la plus péjorative.\n\n" +
         "RÈGLE CRITIQUE : chaque sein est classé UNIQUEMENT sur la base de SES PROPRES " +
         "anomalies. Les anomalies d'un sein ne doivent JAMAIS influencer la classification " +
-        "de l'autre sein." +
+        "de l'autre sein. Si un sein présente des microcalcifications suspectes, une distorsion " +
+        "architecturale, des signes associés de malignité ou toute autre anomalie en association " +
+        "avec une masse, cela ne concerne QUE ce sein. L'autre sein doit être classé " +
+        "indépendamment, uniquement sur ses propres lésions. " +
+        "Exemple : sein droit avec masse + microcalcifications suspectes → ACR 4 ou 5. " +
+        "Sein gauche avec uniquement une masse bénigne → ACR 2 ou 3, jamais ACR 4.\n\n" +
         "FORMAT OBLIGATOIRE en fin de réponse :\n" +
         "ACR sein droit : X. Action recommandée : [action]\n" +
         "ACR sein gauche : X. Action recommandée : [action]\n\n" +
