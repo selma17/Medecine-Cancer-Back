@@ -42,6 +42,9 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "Si un seul sein présente des anomalies, ne classe que ce sein. " +
         "Si les deux seins présentent des anomalies, classe chacun séparément. " +
         "Plusieurs lésions dans un même sein : retenir la classification la plus péjorative.\n\n" +
+        "RÈGLE CRITIQUE : chaque sein est classé UNIQUEMENT sur la base de SES PROPRES " +
+        "anomalies. Les anomalies d'un sein ne doivent JAMAIS influencer la classification " +
+        "de l'autre sein." +
         "FORMAT OBLIGATOIRE en fin de réponse :\n" +
         "ACR sein droit : X. Action recommandée : [action]\n" +
         "ACR sein gauche : X. Action recommandée : [action]\n\n" +
