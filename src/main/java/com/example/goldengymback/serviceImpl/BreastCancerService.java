@@ -54,9 +54,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "ACR sein droit : X. Action recommandée : [action]\n" +
         "ACR sein gauche : X. Action recommandée : [action]\n\n" +
         "X = 1, 2, 3, 4A, 4B, 4C ou 5\n" +
-        "[action] = Surveillance, Biopsie, Ablation chirurgicale ou Traitement médical.\n" +
-        "Si la classification est ACR 3 : préciser dans la conduite à tenir [action] la modalité " +
-        "et le rythme de surveillance.";
+        "[action] = Surveillance après 6 mois ou Biopsie.\n" ;
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
     private static boolean notEmpty(String s) {
