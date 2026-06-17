@@ -24,6 +24,7 @@ public class MasseEchostructure {
     private String comportementDesFaisceauxUltrasons;
     private String calcifications;
     private String densite;
+    private String rayonHoraire;
 
     @ManyToOne
     @JoinColumn(name = "mammary_scan_id")
