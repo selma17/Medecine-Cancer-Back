@@ -42,6 +42,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "Si un seul sein présente des anomalies, ne classe que ce sein. " +
         "Si les deux seins présentent des anomalies, classe chacun séparément. " +
         "Plusieurs lésions dans un même sein : retenir la classification la plus péjorative.\n\n" +
+
         "RÈGLE CRITIQUE : chaque sein est classé UNIQUEMENT sur la base de SES PROPRES " +
         "anomalies. Les anomalies d'un sein ne doivent JAMAIS influencer la classification " +
         "de l'autre sein. Si un sein présente des microcalcifications suspectes, une distorsion " +
@@ -50,11 +51,53 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "indépendamment, uniquement sur ses propres lésions. " +
         "Exemple : sein droit avec masse + microcalcifications suspectes → ACR 4 ou 5. " +
         "Sein gauche avec uniquement une masse bénigne → ACR 2 ou 3, jamais ACR 4.\n\n" +
+
+        "=== RÉFÉRENCE : Classification ACR BI-RADS en MAMMOGRAPHIE ===\n" +
+        "ACR 1 : Mammographie normale.\n" +
+        "ACR 2 : Lésions bénignes (VPP 0%) : masses rondes avec calcifications grossières " +
+        "(kyste, adénofibrome), ganglion intra mammaire, kystes typiques en échographie, " +
+        "masse de densité mixte (hamartome, lipome, galactocèle, kyste huileux), " +
+        "cicatrice connue, calcifications bénignes.\n" +
+        "ACR 3 : Lésions probablement bénignes (VPP ≤ 2%) : calcifications rondes ou amorphes " +
+        "peu nombreuses, petits amas ronds ou ovales de calcifications polymorphes, " +
+        "masse bien circonscrite ronde ou ovale sans micro-lobulations, " +
+        "asymétrie focale de densité à contours concaves ou mélangée.\n" +
+        "ACR 4 : Lésions indéterminées (VPP entre 2 et 95%) : calcifications rondes nombreuses " +
+        "et/ou groupées aux contours irréguliers, calcifications amorphes ou poussiéreuses " +
+        "groupées et nombreuses, calcifications grossières hétérogènes peu nombreuses, " +
+        "calcifications fines polymorphes, distorsion architecturale en dehors d'une cicatrice connue.\n" +
+        "ACR 5 : Lésions typiquement malignes (VPP > 95%) : calcifications fines linéaires ou " +
+        "ramifiées, calcifications grossières hétérogènes ou fines polymorphes nombreuses et " +
+        "groupées, calcifications groupées avec distribution linéaire ou segmentaire, " +
+        "calcifications associées à une distorsion architecturale ou une masse, " +
+        "augmentation du nombre de calcifications suspectes, masses aux contours flous, " +
+        "irréguliers ou spiculés.\n\n" +
+
+        "=== RÉFÉRENCE : Classification BI-RADS ACR en ÉCHOGRAPHIE ===\n" +
+        "ACR 1 : Échographie normale.\n" +
+        "ACR 2 : Lésions bénignes : kystes simples, ganglion intra mammaire, implant, " +
+        "fibroadénome, cicatrice stable.\n" +
+        "ACR 3 : Masse solide d'allure bénigne (contours réguliers, forme ovale, " +
+        "échostructure homogène, renforcement postérieur, orientation parallèle). " +
+        "Kystes compliqués, échogènes homogènes, amas de microkystes accolés.\n" +
+        "ACR 4 : 4A = lésions pour lesquelles il manque un critère pour classer en ACR 3. " +
+        "4B = lésions à risque intermédiaire, nécessitant une discussion radio-histologique " +
+        "et une surveillance rapprochée. " +
+        "4C = lésions à haut risque, un critère manquant pour ACR 5.\n" +
+        "ACR 5 : Masse aux contours flous ou irréguliers, masse de contours spiculés. " +
+        "Un complément par micro-biopsie est nécessaire.\n\n" +
+
+        "=== RÉFÉRENCE : Classification des MICROCALCIFICATIONS (morphologie × distribution) ===\n" +
+        "Rondes/punctiformes : diffuses=ACR2 | groupées/régionales=ACR3 | linéaires/segmentaires=ACR4A\n" +
+        "Grossières hétérogènes : diffuses=ACR2 | groupées/régionales=ACR4B | linéaires/segmentaires=ACR4C\n" +
+        "Amorphes/pléiomorphes : diffuses=ACR2/3 | groupées/régionales=ACR4B | linéaires/segmentaires=ACR4C\n" +
+        "Linéaires : diffuses=ACR4A | groupées/régionales=ACR4C | linéaires/segmentaires=ACR5\n\n" +
+
         "FORMAT OBLIGATOIRE en fin de réponse :\n" +
         "ACR sein droit : X. Action recommandée : [action]\n" +
         "ACR sein gauche : X. Action recommandée : [action]\n\n" +
         "X = 1, 2, 3, 4A, 4B, 4C ou 5\n" +
-        "[action] = Surveillance après 6 mois ou Biopsie.\n" ;
+        "[action] = Surveillance après 6 mois ou Biopsie.";
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
     private static boolean notEmpty(String s) {
@@ -224,122 +267,204 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         return p.getOrDefault(c1, 1) >= p.getOrDefault(c2, 1) ? c1 : c2;
     }
 
+    // ─── Détermine à quel sein appartient une localisation/sein textuel ─────────
+    private static boolean matchSide(String value, String side) {
+        if (value == null) return false;
+        String v = value.toLowerCase();
+        if (side.equals("droit"))  return v.contains("droit") || v.endsWith("d") || v.contains(" d ") || v.contains("/d");
+        if (side.equals("gauche")) return v.contains("gauche") || v.endsWith("g") || v.contains(" g ") || v.contains("/g");
+        return false;
+    }
+
+    // ─── Construit le bloc de données pour UN sein donné ────────────────────────
+    // soloSide = true si ce sein est le SEUL concerné par l'examen : dans ce cas
+    // les signes sans côté explicite lui sont rattachés.
+    private void appendSeinBlock(StringBuilder p, MammaryScan scan, String side, String titre, boolean soloSide) {
+        StringBuilder b = new StringBuilder();
+
+        // Un signe appartient à ce sein si sa localisation matche le côté,
+        // OU si ce sein est le seul concerné (soloSide) et la localisation
+        // ne désigne pas explicitement l'autre côté.
+        String autre = side.equals("droit") ? "gauche" : "droit";
+        java.util.function.BiPredicate<String, String> belongs = (loc, s) -> {
+            if (matchSide(loc, s)) return true;
+            if (soloSide && !matchSide(loc, autre)) return true;
+            return false;
+        };
+
+        // Masses mammographie de ce sein
+        java.util.List<Integer> idxMammo = new java.util.ArrayList<>();
+        if (scan.getMassesMammographie() != null) {
+            for (int i = 0; i < scan.getMassesMammographie().size(); i++) {
+                var m = scan.getMassesMammographie().get(i);
+                if (m.getSein() != null && m.getSein().toLowerCase().startsWith(side)) idxMammo.add(i);
+            }
+        }
+        if (!idxMammo.isEmpty()) {
+            b.append("  Masses (mammographie) — ").append(idxMammo.size()).append(" :\n");
+            int n = 1;
+            for (int i : idxMammo) {
+                var m = scan.getMassesMammographie().get(i);
+                b.append("    Masse ").append(n++).append(" :");
+                if (notEmpty(m.getLocalisation())) b.append(" Loc=").append(m.getLocalisation());
+                if (notEmpty(m.getForme()))         b.append(" | Forme=").append(m.getForme());
+                if (notEmpty(m.getContours()))      b.append(" | Contours=").append(m.getContours());
+                if (notEmpty(m.getDensite()))       b.append(" | Densité=").append(m.getDensite());
+                b.append("\n");
+            }
+        }
+
+        // Masses échographie de ce sein
+        java.util.List<Integer> idxEcho = new java.util.ArrayList<>();
+        if (scan.getMassesEchostructure() != null) {
+            for (int i = 0; i < scan.getMassesEchostructure().size(); i++) {
+                var m = scan.getMassesEchostructure().get(i);
+                if (m.getSein() != null && m.getSein().toLowerCase().startsWith(side)) idxEcho.add(i);
+            }
+        }
+        if (!idxEcho.isEmpty()) {
+            b.append("  Masses (échographie — mêmes lésions, ne pas compter en double) — ")
+             .append(idxEcho.size()).append(" :\n");
+            int n = 1;
+            for (int i : idxEcho) {
+                var m = scan.getMassesEchostructure().get(i);
+                b.append("    Masse ").append(n++).append(" :");
+                if (notEmpty(m.getLocalisation()))                     b.append(" Loc=").append(m.getLocalisation());
+                if (notEmpty(m.getMesure()))                            b.append(" | ").append(m.getMesure()).append("mm");
+                if (notEmpty(m.getDistanceCentre()))                    b.append(" | Dist.mamelon=").append(m.getDistanceCentre()).append("mm");
+                if (notEmpty(m.getForme()))                             b.append(" | Forme=").append(m.getForme());
+                if (notEmpty(m.getContours()))                          b.append(" | Contours=").append(m.getContours());
+                if (notEmpty(m.getDensite()))                           b.append(" | Écho=").append(m.getDensite());
+                if (notEmpty(m.getOrientation()))                       b.append(" | Orient=").append(m.getOrientation());
+                if (notEmpty(m.getComportementDesFaisceauxUltrasons())) b.append(" | Comport=").append(m.getComportementDesFaisceauxUltrasons());
+                if (notEmpty(m.getCalcifications()))                    b.append(" | Calcif=").append(m.getCalcifications());
+                b.append("\n");
+            }
+        }
+
+        // Asymétrie (si rattachée à ce sein)
+        if (scan.isAsymetrie() && belongs.test(scan.getLocalisationAsymetrie(), side)) {
+            b.append("  Asymétrie : Oui");
+            if (notEmpty(scan.getTypeAsymetrie()))         b.append(" — ").append(scan.getTypeAsymetrie());
+            if (notEmpty(scan.getLocalisationAsymetrie())) b.append(" (").append(scan.getLocalisationAsymetrie()).append(")");
+            b.append("\n");
+        }
+
+        // Distorsion architecturale (si rattachée à ce sein)
+        if (scan.isDistorsionArchitecturale() && belongs.test(scan.getLocalisationDistorsion(), side)) {
+            b.append("  Distorsion architecturale : Oui");
+            if (notEmpty(scan.getOptionDistorsionArchitecturale())) b.append(" — ").append(scan.getOptionDistorsionArchitecturale());
+            if (notEmpty(scan.getLocalisationDistorsion()))          b.append(" (").append(scan.getLocalisationDistorsion()).append(")");
+            b.append("\n");
+        }
+
+        // Calcifications (si rattachées à ce sein)
+        if (scan.isCalcifications() && belongs.test(scan.getLocalisationCalcifications(), side)) {
+            b.append("  Calcifications : Oui");
+            if (notEmpty(scan.getLocalisationCalcifications())) b.append(" (").append(scan.getLocalisationCalcifications()).append(")");
+            b.append("\n");
+            if (notEmpty(scan.getTypesCalcifications()))             b.append("    Type : ").append(scan.getTypesCalcifications()).append("\n");
+            if (notEmpty(scan.getCalcificationsBenignes()))          b.append("    Bénignes : ").append(scan.getCalcificationsBenignes()).append("\n");
+            if (notEmpty(scan.getCalcificationsSuspectes()))         b.append("    Suspectes : ").append(scan.getCalcificationsSuspectes()).append("\n");
+            if (notEmpty(scan.getDistributionMicrocalcifications())) b.append("    Distribution : ").append(scan.getDistributionMicrocalcifications()).append("\n");
+        }
+
+        // Signes associés mammographie (si localisés sur ce sein)
+        if (scan.getSignesAssociesMammographie() != null) {
+            List<String> locs = scan.getLocalisationsSignesMammographie();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < scan.getSignesAssociesMammographie().size(); i++) {
+                String loc = (locs != null && i < locs.size()) ? locs.get(i) : null;
+                if (belongs.test(loc, side)) {
+                    sb.append("    • ").append(scan.getSignesAssociesMammographie().get(i));
+                    if (notEmpty(loc)) sb.append(" (").append(loc).append(")");
+                    sb.append("\n");
+                }
+            }
+            if (sb.length() > 0) b.append("  Signes associés (mammographie) :\n").append(sb);
+        }
+
+        // Signes associés échographie (si localisés sur ce sein)
+        if (scan.getSignesAssociesEchostructure() != null) {
+            List<String> locs = scan.getLocalisationsSignesEchostructure();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < scan.getSignesAssociesEchostructure().size(); i++) {
+                String loc = (locs != null && i < locs.size()) ? locs.get(i) : null;
+                if (belongs.test(loc, side)) {
+                    sb.append("    • ").append(scan.getSignesAssociesEchostructure().get(i));
+                    if (notEmpty(loc)) sb.append(" (").append(loc).append(")");
+                    sb.append("\n");
+                }
+            }
+            if (sb.length() > 0) b.append("  Signes associés (échographie) :\n").append(sb);
+        }
+
+        // Cas spéciaux (si localisés sur ce sein)
+        if (scan.getCasSpeciaux() != null) {
+            StringBuilder sb = new StringBuilder();
+            for (var cas : scan.getCasSpeciaux()) {
+                if (belongs.test(cas.getLocalisation(), side)) {
+                    sb.append("    • ").append(cas.getNom());
+                    if (notEmpty(cas.getLocalisation())) sb.append(" (").append(cas.getLocalisation()).append(")");
+                    sb.append("\n");
+                }
+            }
+            if (sb.length() > 0) b.append("  Cas spéciaux :\n").append(sb);
+        }
+
+        // Adénopathie axillaire — détails (si rattachée à ce sein)
+        if (notEmpty(scan.getAdenopathieLocalisation())) {
+            String aLoc = scan.getAdenopathieLocalisation().toLowerCase();
+            boolean matchAdeno = aLoc.contains("bilatérale") || aLoc.contains("bilateral")
+                || (side.equals("droit") && aLoc.contains("droit"))
+                || (side.equals("gauche") && aLoc.contains("gauche"));
+            if (matchAdeno) {
+                b.append("  Adénopathie axillaire :\n");
+                b.append("    Localisation : ").append(scan.getAdenopathieLocalisation()).append("\n");
+                if (notEmpty(scan.getAdenopathieChaineBerg()))
+                    b.append("    Chaîne de Berg : ").append(scan.getAdenopathieChaineBerg()).append("\n");
+                if (notEmpty(scan.getAdenopathieNombre()))
+                    b.append("    Nombre : ").append(scan.getAdenopathieNombre()).append("\n");
+                if (notEmpty(scan.getAdenopathieMesure()))
+                    b.append("    Mesure : ").append(scan.getAdenopathieMesure()).append(" mm\n");
+            }
+        }
+
+        // N'écrire le bloc que s'il contient des données
+        if (b.length() > 0) {
+            p.append("\n").append(titre).append("\n");
+            p.append(b);
+        }
+    }
+
     // ─── Construction du prompt ────────────────────────────────────────────────
     private String createPrompt(MammaryScan scan) {
         StringBuilder p = new StringBuilder();
         p.append("Analyse cet examen mammaire et fournis la classification BI-RADS ACR 2013.\n");
-        p.append("Les champs absents signifient que la donnée n'a pas été recueillie — classe avec ce qui est disponible.\n\n");
+        p.append("Les champs absents signifient que la donnée n'a pas été recueillie — classe avec ce qui est disponible.\n");
+        p.append("Les données sont regroupées PAR SEIN. Traite chaque sein séparément et indépendamment.\n");
 
-        p.append("=== MAMMOGRAPHIE ===\n");
-        appendIfNotEmpty(p, "Densité mammaire : ", scan.getDensiteMammaire());
-
-        if (scan.isAsymetrie()) {
-            p.append("Asymétrie : Oui");
-            if (notEmpty(scan.getTypeAsymetrie()))         p.append(" — ").append(scan.getTypeAsymetrie());
-            if (notEmpty(scan.getLocalisationAsymetrie())) p.append(" — localisation : ").append(scan.getLocalisationAsymetrie());
-            p.append("\n");
-        }
-
-        if (scan.isDistorsionArchitecturale()) {
-            p.append("Distorsion architecturale : Oui");
-            if (notEmpty(scan.getOptionDistorsionArchitecturale())) p.append(" — ").append(scan.getOptionDistorsionArchitecturale());
-            if (notEmpty(scan.getLocalisationDistorsion()))          p.append(" — localisation : ").append(scan.getLocalisationDistorsion());
-            p.append("\n");
-        }
-
-        if (scan.isCalcifications()) {
-            p.append("Calcifications : Oui");
-            if (notEmpty(scan.getLocalisationCalcifications()))
-                p.append(" — localisation : ").append(scan.getLocalisationCalcifications());
-            p.append("\n");
-            if (notEmpty(scan.getTypesCalcifications()))
-                p.append("  Type : ").append(scan.getTypesCalcifications()).append("\n");
-            if (notEmpty(scan.getCalcificationsBenignes()))
-                p.append("  Calcifications bénignes : ").append(scan.getCalcificationsBenignes()).append("\n");
-            if (notEmpty(scan.getCalcificationsSuspectes()))
-                p.append("  Calcifications suspectes : ").append(scan.getCalcificationsSuspectes()).append("\n");
-            if (notEmpty(scan.getDistributionMicrocalcifications()))
-                p.append("  Distribution : ").append(scan.getDistributionMicrocalcifications()).append("\n");
-        }
-
-        if (scan.getSignesAssociesMammographie() != null && !scan.getSignesAssociesMammographie().isEmpty()) {
-            p.append("Signes associés (mammographie) :\n");
-            List<String> locs = scan.getLocalisationsSignesMammographie();
-            for (int i = 0; i < scan.getSignesAssociesMammographie().size(); i++) {
-                p.append("  • ").append(scan.getSignesAssociesMammographie().get(i));
-                if (locs != null && i < locs.size() && notEmpty(locs.get(i)))
-                    p.append(" — localisation : ").append(locs.get(i));
-                p.append("\n");
-            }
-        }
-
-        if (scan.getMassesMammographie() != null && !scan.getMassesMammographie().isEmpty()) {
-            p.append("Masses mammographie (").append(scan.getMassesMammographie().size()).append(") :\n");
-            for (int i = 0; i < scan.getMassesMammographie().size(); i++) {
-                var m = scan.getMassesMammographie().get(i);
-                p.append("  M").append(i + 1).append(" :");
-                p.append(" SEIN=").append(notEmpty(m.getSein()) ? m.getSein().toUpperCase() : "?");
-                if (notEmpty(m.getLocalisation()))  p.append(" | Loc=").append(m.getLocalisation());
-                if (notEmpty(m.getForme()))          p.append(" | Forme=").append(m.getForme());
-                if (notEmpty(m.getContours()))       p.append(" | Contours=").append(m.getContours());
-                if (notEmpty(m.getDensite()))        p.append(" | Densité=").append(m.getDensite());
-                p.append("\n");
-            }
-        }
-
-        p.append("\n=== ÉCHOGRAPHIE ===\n");
-        p.append("(Mêmes masses que la mammographie — ne pas compter en double)\n");
-        appendIfNotEmpty(p, "Échostructure : ", scan.getEchostructureMammaire());
-
-        if (scan.getMassesEchostructure() != null && !scan.getMassesEchostructure().isEmpty()) {
-            p.append("Masses échographie (").append(scan.getMassesEchostructure().size()).append(") :\n");
-            for (int i = 0; i < scan.getMassesEchostructure().size(); i++) {
-                var m = scan.getMassesEchostructure().get(i);
-                p.append("  M").append(i + 1).append(" :");
-                p.append(" SEIN=").append(notEmpty(m.getSein()) ? m.getSein().toUpperCase() : "?");
-                if (notEmpty(m.getLocalisation()))                     p.append(" | Loc=").append(m.getLocalisation());
-                if (notEmpty(m.getMesure()))                            p.append(" | ").append(m.getMesure()).append("mm");
-                if (notEmpty(m.getDistanceCentre()))                    p.append(" | Dist.mamelon=").append(m.getDistanceCentre()).append("mm");
-                if (notEmpty(m.getForme()))                             p.append(" | Forme=").append(m.getForme());
-                if (notEmpty(m.getContours()))                          p.append(" | Contours=").append(m.getContours());
-                if (notEmpty(m.getDensite()))                           p.append(" | Écho=").append(m.getDensite());
-                if (notEmpty(m.getOrientation()))                       p.append(" | Orient=").append(m.getOrientation());
-                if (notEmpty(m.getComportementDesFaisceauxUltrasons())) p.append(" | Comport=").append(m.getComportementDesFaisceauxUltrasons());
-                if (notEmpty(m.getCalcifications()))                    p.append(" | Calcif=").append(m.getCalcifications());
-                p.append("\n");
-            }
-        }
-
-        if (scan.getSignesAssociesEchostructure() != null && !scan.getSignesAssociesEchostructure().isEmpty()) {
-            p.append("Signes associés (échographie) :\n");
-            List<String> locs = scan.getLocalisationsSignesEchostructure();
-            for (int i = 0; i < scan.getSignesAssociesEchostructure().size(); i++) {
-                p.append("  • ").append(scan.getSignesAssociesEchostructure().get(i));
-                if (locs != null && i < locs.size() && notEmpty(locs.get(i)))
-                    p.append(" — localisation : ").append(locs.get(i));
-                p.append("\n");
-            }
-        }
-
-        if (scan.getCasSpeciaux() != null && !scan.getCasSpeciaux().isEmpty()) {
-            p.append("Cas spéciaux :\n");
-            for (var cas : scan.getCasSpeciaux()) {
-                p.append("  • ").append(cas.getNom());
-                if (notEmpty(cas.getLocalisation()))
-                    p.append(" — localisation : ").append(cas.getLocalisation());
-                p.append("\n");
-            }
+        // Densité / échostructure = communes (caractéristiques globales du tissu)
+        StringBuilder global = new StringBuilder();
+        appendIfNotEmpty(global, "Densité mammaire : ", scan.getDensiteMammaire());
+        appendIfNotEmpty(global, "Échostructure : ", scan.getEchostructureMammaire());
+        if (global.length() > 0) {
+            p.append("\n=== CONTEXTE GÉNÉRAL (commun aux deux seins) ===\n").append(global);
         }
 
         boolean hasDroit  = hasSeins(scan, "droit");
         boolean hasGauche = hasSeins(scan, "gauche");
         if (!hasDroit && !hasGauche) { hasDroit = true; hasGauche = true; }
 
-        p.append("\nSEINS AVEC ANOMALIES :\n");
-        if (hasDroit)  p.append("- SEIN DROIT\n");
-        if (hasGauche) p.append("- SEIN GAUCHE\n");
+        // Un seul sein concerné → les signes sans côté explicite lui sont rattachés
+        boolean droitSolo  = hasDroit && !hasGauche;
+        boolean gaucheSolo = hasGauche && !hasDroit;
 
-        p.append("\nTermine ta réponse OBLIGATOIREMENT par :\n");
+        if (hasDroit)  appendSeinBlock(p, scan, "droit",  "===== SEIN DROIT =====",  droitSolo);
+        if (hasGauche) appendSeinBlock(p, scan, "gauche", "===== SEIN GAUCHE =====", gaucheSolo);
+
+        p.append("\nClasse chaque sein ci-dessus de façon INDÉPENDANTE, sur ses seules données.\n");
+        p.append("Termine ta réponse OBLIGATOIREMENT par :\n");
         if (hasDroit)  p.append("ACR sein droit : X. Action recommandée : [action]\n");
         if (hasGauche) p.append("ACR sein gauche : X. Action recommandée : [action]\n");
 
