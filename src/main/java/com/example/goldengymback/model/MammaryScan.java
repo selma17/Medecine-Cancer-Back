@@ -66,6 +66,12 @@ public class MammaryScan {
 
     private boolean isCasSpeciauxRequired;
 
+    // ── ADÉNOPATHIE AXILLAIRE (détails) ───────────────────────────────────────
+    private String adenopathieLocalisation;      // droite / gauche / bilatérale
+    private String adenopathieChaineBerg;         // "I, II" (stocké en texte)
+    private String adenopathieNombre;             // nombre d'adénopathies
+    private String adenopathieMesure;             // mesure en mm (ex: "15x10")
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "cas_speciaux", joinColumns = @JoinColumn(name = "mammary_scan_id"))
     private List<CasSpecial> casSpeciaux;
