@@ -34,9 +34,9 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "Tu es un radiologue expert spécialisé en imagerie mammaire. " +
         "Analyse rigoureusement les éléments sémiologiques fournis et établis la classification " +
         "ACR BI-RADS 2013 ainsi que la conduite à tenir pour chaque sein concerné. " +
-        "Les données peuvent inclure uniquement une mammographie, ou une mammographie " +
+        "Les données peuvent inclure uniquement une échographie, ou une mammographie " +
         "complétée par une échographie. Analyse ce qui est disponible sans imposer " +
-        "la présence de l'échographie. " +
+        "la présence de la mammographie. " +
         "Si l'échographie est présente, elle complète la mammographie et décrit les MÊMES seins — " +
         "ne jamais compter les masses en double. " +
         "Si un seul sein présente des anomalies, ne classe que ce sein. " +
@@ -49,8 +49,8 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "architecturale, des signes associés de malignité ou toute autre anomalie en association " +
         "avec une masse, cela ne concerne QUE ce sein. L'autre sein doit être classé " +
         "indépendamment, uniquement sur ses propres lésions. " +
-        "Exemple : sein droit avec masse + microcalcifications suspectes → ACR 4 ou 5. " +
-        "Sein gauche avec uniquement une masse bénigne → ACR 2 ou 3, jamais ACR 4.\n\n" +
+        // "Exemple : sein droit avec masse + microcalcifications suspectes → ACR 4 ou 5. " +
+        // "Sein gauche avec uniquement une masse bénigne → ACR 2 ou 3, jamais ACR 4.\n\n" +
 
         "=== RÉFÉRENCE : Classification ACR BI-RADS en MAMMOGRAPHIE ===\n" +
         "ACR 1 : Mammographie normale.\n" +
