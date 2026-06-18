@@ -50,7 +50,6 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "- Plusieurs lésions dans un même sein : retenir la classification LA PLUS PÉJORATIVE.\n" +
         "- Une masse solide d'allure bénigne (ovale, contours circonscrits, orientation parallèle, " +
         "renforcement postérieur) = ACR 3, PAS ACR 2.\n" +
-        "Les contours suivants sont suspects et interdisent ACR 3 : microlobulés, indistincts, anguleux, spiculés.\n" +
         "- Des microcalcifications suspectes SANS masse = au moins ACR 4.\n" +
         "- Une adénopathie axillaire associée à une masse AGGRAVE la classification du sein concerné.\n" +
         "- Une distorsion architecturale en dehors d'une cicatrice connue = au moins ACR 4.\n\n" +
@@ -230,10 +229,48 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
     }
 
     private boolean hasSeins(MammaryScan scan, String side) {
-        return (scan.getMassesMammographie() != null && scan.getMassesMammographie().stream()
+        // Masses mammographie
+        if (scan.getMassesMammographie() != null && scan.getMassesMammographie().stream()
                 .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().startsWith(side)))
-            || (scan.getMassesEchostructure() != null && scan.getMassesEchostructure().stream()
-                .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().startsWith(side)));
+            return true;
+        // Masses échographie
+        if (scan.getMassesEchostructure() != null && scan.getMassesEchostructure().stream()
+                .anyMatch(m -> m.getSein() != null && m.getSein().toLowerCase().startsWith(side)))
+            return true;
+        // Calcifications localisées sur ce sein
+        if (scan.isCalcifications() && matchSide(scan.getLocalisationCalcifications(), side))
+            return true;
+        // Distorsion localisée sur ce sein
+        if (scan.isDistorsionArchitecturale() && matchSide(scan.getLocalisationDistorsion(), side))
+            return true;
+        // Asymétrie localisée sur ce sein
+        if (scan.isAsymetrie() && matchSide(scan.getLocalisationAsymetrie(), side))
+            return true;
+        // Signes associés mammographie localisés sur ce sein
+        if (scan.getSignesAssociesMammographie() != null && scan.getLocalisationsSignesMammographie() != null) {
+            for (int i = 0; i < scan.getLocalisationsSignesMammographie().size(); i++) {
+                if (matchSide(scan.getLocalisationsSignesMammographie().get(i), side)) return true;
+            }
+        }
+        // Signes associés échographie localisés sur ce sein
+        if (scan.getSignesAssociesEchostructure() != null && scan.getLocalisationsSignesEchostructure() != null) {
+            for (int i = 0; i < scan.getLocalisationsSignesEchostructure().size(); i++) {
+                if (matchSide(scan.getLocalisationsSignesEchostructure().get(i), side)) return true;
+            }
+        }
+        // Cas spéciaux localisés sur ce sein
+        if (scan.getCasSpeciaux() != null) {
+            for (var cas : scan.getCasSpeciaux()) {
+                if (matchSide(cas.getLocalisation(), side)) return true;
+            }
+        }
+        // Adénopathie localisée sur ce sein
+        if (notEmpty(scan.getAdenopathieLocalisation())) {
+            String aLoc = scan.getAdenopathieLocalisation().toLowerCase();
+            if (aLoc.contains("bilatérale") || aLoc.contains("bilateral") || aLoc.contains(side))
+                return true;
+        }
+        return false;
     }
 
     // ─── normalizeConduite : garde la conduite complète si elle commence par un mot clé valide
