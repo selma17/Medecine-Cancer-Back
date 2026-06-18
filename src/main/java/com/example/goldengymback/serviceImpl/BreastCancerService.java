@@ -81,10 +81,11 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "ACR 1 : Échographie normale.\n" +
         "ACR 2 : Lésions bénignes : kystes simples, ganglion intra mammaire, implant, " +
         "fibroadénome, cicatrice stable.\n" +
-        "ACR 3 : Masse solide d'allure bénigne (contours réguliers, forme ovale, " +
+        "ACR 3 : Masse solide d'allure bénigne (contours circonscrits, forme ovale ou ronde, " +
         "échostructure homogène, renforcement postérieur, orientation parallèle). " +
         "Kystes compliqués, échogènes homogènes, amas de microkystes accolés.\n" +
         "ACR 4 : 4A = lésions pour lesquelles il manque un critère pour classer en ACR 3. " +
+        "Exemple: masse avec tous les critères de bégnignité mais avec des contours microlobulés" +
         "4B = lésions à risque intermédiaire, nécessitant une discussion radio-histologique " +
         "et une surveillance rapprochée. " +
         "4C = lésions à haut risque, un critère manquant pour ACR 5.\n" +
