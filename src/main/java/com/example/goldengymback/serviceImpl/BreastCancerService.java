@@ -94,6 +94,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "4C = lésions à haut risque, un critère manquant pour ACR 5.\n" +
         "ACR 5 : Masse aux contours flous ou irréguliers, masse de contours spiculés. " +
         "Un complément par micro-biopsie est nécessaire.\n\n" +
+        "Les contours suivants sont suspects et interdisent ACR 3 : microlobulés, indistincts, anguleux, spiculés."
 
         "=== RÉFÉRENCE : Classification des MICROCALCIFICATIONS (morphologie × distribution) ===\n" +
         "Rondes/punctiformes : diffuses=ACR2 | groupées/régionales=ACR3 | linéaires/segmentaires=ACR4A\n" +
