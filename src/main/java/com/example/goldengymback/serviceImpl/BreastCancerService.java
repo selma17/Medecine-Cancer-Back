@@ -49,6 +49,10 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "architecturale, des signes associés de malignité ou toute autre anomalie en association " +
         "avec une masse, cela ne concerne QUE ce sein. L'autre sein doit être classé " +
         "indépendamment, uniquement sur ses propres lésions. " +
+        "Une lésion présentant des critères hautement évocateurs de malignité doit être classée ACR BI-RADS 5, même si une autre lésion controlatérale présente des critères bénins." +
+        "Ne fais jamais de moyenne entre les scores des deux seins." +
+        "Ne rétrograde jamais un ACR 5 en ACR 4 à cause de la présence d’une autre masse moins suspecte." +
+        "Si une masse présente une forme irrégulière, des contours spiculés, une orientation non parallèle, une échostructure hypoéchogène et/ou une atténuation postérieure, elle doit être considérée comme hautement suspecte. En présence de plusieurs critères majeurs de malignité, classer ACR BI-RADS 5." +
         // "Exemple : sein droit avec masse + microcalcifications suspectes → ACR 4 ou 5. " +
         // "Sein gauche avec uniquement une masse bénigne → ACR 2 ou 3, jamais ACR 4.\n\n" +
 
