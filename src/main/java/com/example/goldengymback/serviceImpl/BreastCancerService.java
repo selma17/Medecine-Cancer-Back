@@ -37,10 +37,9 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "Les données peuvent inclure uniquement une échographie, ou une mammographie " +
         "complétée par une échographie. Analyse ce qui est disponible sans imposer " +
         "la présence de la mammographie. " +
-        "Classer en ACR les microcalcifications même lorsqu'elles sont isolées ou en absence de masse" +
         "Si l'échographie est présente, elle complète la mammographie et décrit les MÊMES seins — " +
         "ne jamais compter les masses en double. " +
-        "Si un seul sein présente des anomalies, ne classe que ce sein. " +
+        //"Si un seul sein présente des anomalies, ne classe que ce sein. " +
         "Si les deux seins présentent des anomalies, classe chacun séparément. " +
         "Plusieurs lésions dans un même sein : retenir la classification la plus péjorative.\n\n" +
 
@@ -54,6 +53,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "Ne fais jamais de moyenne entre les scores des deux seins." +
         "Ne rétrograde jamais un ACR 5 en ACR 4 à cause de la présence d’une autre masse moins suspecte." +
         "Si une masse présente une forme irrégulière, des contours spiculés, une orientation non parallèle, une échostructure hypoéchogène et/ou une atténuation postérieure, elle doit être considérée comme hautement suspecte. En présence de plusieurs critères majeurs de malignité, classer ACR BI-RADS 5." +
+        "Classe en ACR le sein qui contient des microcalcifications retrouvées en mammographie même lorsqu'elles sont isolées ou en absence de masse" +
         // "Exemple : sein droit avec masse + microcalcifications suspectes → ACR 4 ou 5. " +
         // "Sein gauche avec uniquement une masse bénigne → ACR 2 ou 3, jamais ACR 4.\n\n" +
 
