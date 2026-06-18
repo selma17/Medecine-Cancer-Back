@@ -56,53 +56,41 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "Classe en ACR le sein qui contient des microcalcifications retrouvées en mammographie même lorsqu'elles sont isolées ou en absence de masse" +
         // "Exemple : sein droit avec masse + microcalcifications suspectes → ACR 4 ou 5. " +
         // "Sein gauche avec uniquement une masse bénigne → ACR 2 ou 3, jamais ACR 4.\n\n" +
-        "CAS SPÉCIFIQUE : MICROCALCIFICATIONS SANS MASSE (mammographie)
-
-        Si un sein présente des microcalcifications SANS masse associée :
-
-        1. NE PAS ignorer les calcifications même si :
-        - échographie est normale
-        - aucune masse n'est détectée
-
-        2. Évaluer les microcalcifications selon leur morphologie BI-RADS :
-
-        a) Typiquement bénignes :
-            - vasculaires
-            - cutanées
-            - “popcorn”
-            - “milk of calcium”
-            - en bâtonnets grossiers
-            → BI-RADS 2
-
-        b) Probablement bénignes :
-            - rondes/punctiformes groupées
-            → BI-RADS 3
-
-        c) Suspicion intermédiaire :
-            - amorphes
-            - hétérogènes grossières
-            → BI-RADS 4A
-
-        d) Suspicion modérée :
-            - pléomorphes fines
-            → BI-RADS 4B
-
-        e) Forte suspicion de malignité :
-            - fines linéaires / ramifiées (casting type)
-            → BI-RADS 4C ou 5 selon extension et distribution
-
-        3. RÈGLE IMPORTANTE :
-        La présence d'une échographie normale NE MODIFIE PAS le score des microcalcifications.
-
-        4. RÈGLE DE PRIORITÉ :
-        Si calcifications + aucune masse :
-            → le BI-RADS du sein est déterminé UNIQUEMENT par les calcifications.
-
-        5. RÈGLE DE SORTIE :
-        Le système doit toujours produire un BI-RADS même en absence de masse :
-            - jamais "null"
-            - jamais "non déterminé"
-        \n " +
+        "CAS SPÉCIFIQUE : MICROCALCIFICATIONS SANS MASSE (mammographie)\n\n" +
+        "Si un sein présente des microcalcifications SANS masse associée :\n\n" +
+        "1. NE PAS ignorer les calcifications même si :\n" +
+        "- échographie est normale\n" +
+        "- aucune masse n'est détectée\n\n" +
+        "2. Évaluer les microcalcifications selon leur morphologie BI-RADS :\n\n" +
+        "a) Typiquement bénignes :\n" +
+        "- vasculaires\n" +
+        "- cutanées\n" +
+        "- popcorn\n" +
+        "- milk of calcium\n" +
+        "- en bâtonnets grossiers\n" +
+        "→ BI-RADS 2\n\n" +
+        "b) Probablement bénignes :\n" +
+        "- rondes/punctiformes groupées\n" +
+        "→ BI-RADS 3\n\n" +
+        "c) Suspicion intermédiaire :\n" +
+        "- amorphes\n" +
+        "- hétérogènes grossières\n" +
+        "→ BI-RADS 4A\n\n" +
+        "d) Suspicion modérée :\n" +
+        "- pléomorphes fines\n" +
+        "→ BI-RADS 4B\n\n" +
+        "e) Forte suspicion de malignité :\n" +
+        "- fines linéaires / ramifiées (casting type)\n" +
+        "→ BI-RADS 4C ou 5 selon extension et distribution\n\n" +
+        "3. RÈGLE IMPORTANTE :\n" +
+        "La présence d'une échographie normale NE MODIFIE PAS le score des microcalcifications.\n\n" +
+        "4. RÈGLE DE PRIORITÉ :\n" +
+        "Si calcifications + aucune masse :\n" +
+        "→ le BI-RADS du sein est déterminé UNIQUEMENT par les calcifications.\n\n" +
+        "5. RÈGLE DE SORTIE :\n" +
+        "Le système doit toujours produire un BI-RADS même en absence de masse :\n" +
+        "- jamais \"null\"\n" +
+        "- jamais \"non déterminé\"\n\n" +
 
         "=== RÉFÉRENCE : Classification ACR BI-RADS en MAMMOGRAPHIE ===\n" +
         "ACR 1 : Mammographie normale.\n" +
