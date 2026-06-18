@@ -56,6 +56,53 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "Classe en ACR le sein qui contient des microcalcifications retrouvées en mammographie même lorsqu'elles sont isolées ou en absence de masse" +
         // "Exemple : sein droit avec masse + microcalcifications suspectes → ACR 4 ou 5. " +
         // "Sein gauche avec uniquement une masse bénigne → ACR 2 ou 3, jamais ACR 4.\n\n" +
+        "CAS SPÉCIFIQUE : MICROCALCIFICATIONS SANS MASSE (mammographie)
+
+        Si un sein présente des microcalcifications SANS masse associée :
+
+        1. NE PAS ignorer les calcifications même si :
+        - échographie est normale
+        - aucune masse n’est détectée
+
+        2. Évaluer les microcalcifications selon leur morphologie BI-RADS :
+
+        a) Typiquement bénignes :
+            - vasculaires
+            - cutanées
+            - “popcorn”
+            - “milk of calcium”
+            - en bâtonnets grossiers
+            → BI-RADS 2
+
+        b) Probablement bénignes :
+            - rondes/punctiformes groupées
+            → BI-RADS 3
+
+        c) Suspicion intermédiaire :
+            - amorphes
+            - hétérogènes grossières
+            → BI-RADS 4A
+
+        d) Suspicion modérée :
+            - pléomorphes fines
+            → BI-RADS 4B
+
+        e) Forte suspicion de malignité :
+            - fines linéaires / ramifiées (casting type)
+            → BI-RADS 4C ou 5 selon extension et distribution
+
+        3. RÈGLE IMPORTANTE :
+        La présence d’une échographie normale NE MODIFIE PAS le score des microcalcifications.
+
+        4. RÈGLE DE PRIORITÉ :
+        Si calcifications + aucune masse :
+            → le BI-RADS du sein est déterminé UNIQUEMENT par les calcifications.
+
+        5. RÈGLE DE SORTIE :
+        Le système doit toujours produire un BI-RADS même en absence de masse :
+            - jamais "null"
+            - jamais "non déterminé"
+        \n " +
 
         "=== RÉFÉRENCE : Classification ACR BI-RADS en MAMMOGRAPHIE ===\n" +
         "ACR 1 : Mammographie normale.\n" +
