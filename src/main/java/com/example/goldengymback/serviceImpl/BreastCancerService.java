@@ -50,6 +50,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "- Plusieurs lésions dans un même sein : retenir la classification LA PLUS PÉJORATIVE.\n" +
         "- Une masse solide d'allure bénigne (ovale, contours circonscrits, orientation parallèle, " +
         "renforcement postérieur) = ACR 3, PAS ACR 2.\n" +
+        "Les contours suivants sont suspects et interdisent ACR 3 : microlobulés, indistincts, anguleux, spiculés.\n" +
         "- Des microcalcifications suspectes SANS masse = au moins ACR 4.\n" +
         "- Une adénopathie axillaire associée à une masse AGGRAVE la classification du sein concerné.\n" +
         "- Une distorsion architecturale en dehors d'une cicatrice connue = au moins ACR 4.\n\n" +
