@@ -51,7 +51,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "indépendamment, uniquement sur ses propres lésions. " +
         "Une lésion présentant des critères hautement évocateurs de malignité doit être classée ACR BI-RADS 5, même si une autre lésion controlatérale présente des critères bénins." +
         "Ne fais jamais de moyenne entre les scores des deux seins." +
-        "Ne rétrograde jamais un ACR 5 en ACR 4 à cause de la présence d’une autre masse moins suspecte." +
+        "Ne rétrograde jamais un ACR 5 en ACR 4 à cause de la présence d'une autre masse moins suspecte." +
         "Si une masse présente une forme irrégulière, des contours spiculés, une orientation non parallèle, une échostructure hypoéchogène et/ou une atténuation postérieure, elle doit être considérée comme hautement suspecte. En présence de plusieurs critères majeurs de malignité, classer ACR BI-RADS 5." +
         "Classe en ACR le sein qui contient des microcalcifications retrouvées en mammographie même lorsqu'elles sont isolées ou en absence de masse" +
         // "Exemple : sein droit avec masse + microcalcifications suspectes → ACR 4 ou 5. " +
@@ -62,7 +62,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
 
         1. NE PAS ignorer les calcifications même si :
         - échographie est normale
-        - aucune masse n’est détectée
+        - aucune masse n'est détectée
 
         2. Évaluer les microcalcifications selon leur morphologie BI-RADS :
 
@@ -92,7 +92,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
             → BI-RADS 4C ou 5 selon extension et distribution
 
         3. RÈGLE IMPORTANTE :
-        La présence d’une échographie normale NE MODIFIE PAS le score des microcalcifications.
+        La présence d'une échographie normale NE MODIFIE PAS le score des microcalcifications.
 
         4. RÈGLE DE PRIORITÉ :
         Si calcifications + aucune masse :
