@@ -37,6 +37,7 @@ public class BreastCancerService implements com.example.goldengymback.service.Br
         "Les données peuvent inclure uniquement une échographie, ou une mammographie " +
         "complétée par une échographie. Analyse ce qui est disponible sans imposer " +
         "la présence de la mammographie. " +
+        "Classer en ACR les microcalcifications même lorsqu'elles sont isolées ou en absence de masse" +
         "Si l'échographie est présente, elle complète la mammographie et décrit les MÊMES seins — " +
         "ne jamais compter les masses en double. " +
         "Si un seul sein présente des anomalies, ne classe que ce sein. " +
